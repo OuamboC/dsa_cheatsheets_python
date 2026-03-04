@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Tuple Mastery</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121e; --card: #1a1a2e; --border: #2a2a4a; --accent: #6ab4f7; --accent2: #c46af7; --accent3: #6af7c0; --text: #e8e8f8; --muted: #6b6b9a; --success: #6af76a; --error: #f76a8c; --warn: #f7c46a; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; padding: 2rem; }
+  .grid-bg { position: fixed; inset: 0; z-index: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 40px 40px; opacity: 0.3; }
+  .container { max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
+  header { margin-bottom: 2.5rem; border-left: 3px solid var(--accent); padding-left: 1.2rem; }
+  header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; font-family: 'JetBrains Mono', monospace; }
+  .progress-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; height: 6px; margin-bottom: 2rem; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.5s ease; border-radius: 4px; }
+  .exercise-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.2rem; transition: border-color 0.2s; }
+  .exercise-card.solved { border-color: var(--success); }
+  .exercise-card.failed { border-color: var(--error); }
+  .exercise-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+  .exercise-num { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); background: var(--surface); padding: 0.2rem 0.6rem; border-radius: 3px; border: 1px solid var(--border); }
+  .exercise-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 3px; }
+  .tag-basic { background: rgba(106,180,247,0.15); color: var(--accent); border: 1px solid rgba(106,180,247,0.3); }
+  .tag-unpack { background: rgba(196,106,247,0.15); color: var(--accent2); border: 1px solid rgba(196,106,247,0.3); }
+  .tag-use { background: rgba(106,247,192,0.15); color: var(--accent3); border: 1px solid rgba(106,247,192,0.3); }
+  .exercise-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .exercise-desc { color: var(--muted); font-size: 0.88rem; line-height: 1.6; font-family: 'JetBrains Mono', monospace; margin-bottom: 1rem; }
+  .code-given { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #a8b4d0; margin-bottom: 1rem; line-height: 1.7; white-space: pre; overflow-x: auto; }
+  .blank { background: rgba(106,180,247,0.15); border: 1px dashed var(--accent); border-radius: 3px; padding: 0 0.3rem; color: var(--accent); font-style: italic; }
+  .answer-area { display: flex; gap: 0.8rem; align-items: stretch; flex-wrap: wrap; }
+  .answer-input { flex: 1; min-width: 200px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; color: var(--text); outline: none; transition: border-color 0.2s; }
+  .answer-input:focus { border-color: var(--accent); }
+  .btn-check { padding: 0.7rem 1.5rem; border-radius: 6px; border: none; background: var(--accent); color: #0a0a0f; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; cursor: pointer; font-weight: 700; transition: opacity 0.2s; white-space: nowrap; }
+  .btn-check:hover { opacity: 0.85; }
+  .btn-hint { padding: 0.7rem 1rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .btn-hint:hover { border-color: var(--warn); color: var(--warn); }
+  .feedback { margin-top: 0.8rem; padding: 0.7rem 1rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; display: none; line-height: 1.5; }
+  .feedback.correct { background: rgba(106,247,106,0.1); border: 1px solid rgba(106,247,106,0.3); color: var(--success); display: block; }
+  .feedback.wrong { background: rgba(247,106,140,0.1); border: 1px solid rgba(247,106,140,0.3); color: var(--error); display: block; }
+  .feedback.hint-show { background: rgba(247,196,106,0.1); border: 1px solid rgba(247,196,106,0.3); color: var(--warn); display: block; }
+  .stats-bar { display: flex; gap: 1.5rem; margin-bottom: 2rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.5rem; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 0.2rem; }
+  .stat-val { font-size: 1.4rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+  .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .section-header { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 1.5rem 0 0.8rem; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 0.8rem; }
+  .section-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .cheatsheet { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 2; }
+  .cheatsheet-toggle { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+  .cheatsheet-toggle span { color: var(--accent); font-weight: 700; }
+  .cheatsheet-content { margin-top: 1rem; }
+  .cs-row { display: flex; gap: 1rem; padding: 0.2rem 0; }
+  .cs-code { color: var(--accent3); min-width: 280px; }
+  .cs-desc { color: var(--muted); }
+  .hidden { display: none; }
+  .congrats { text-align: center; padding: 3rem 2rem; background: var(--card); border: 1px solid var(--success); border-radius: 8px; display: none; }
+  .congrats h2 { font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
+  .congrats p { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="container">
+  <header>
+    <h1>Python Tuple Mastery</h1>
+    <p>// immutable, hashable — key for dict keys and unpacking</p>
+  </header>
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-val" id="score" style="color:var(--accent)">0</span><span class="stat-label">Solved</span></div>
+    <div class="stat"><span class="stat-val" id="total" style="color:var(--muted)">0</span><span class="stat-label">Total</span></div>
+    <div class="stat"><span class="stat-val" id="streak" style="color:var(--warn)">0🔥</span><span class="stat-label">Streak</span></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+  <div class="cheatsheet">
+    <div class="cheatsheet-toggle" onclick="toggleCS()">
+      <span>📖 Quick Reference</span>
+      <span id="cs-arrow" style="color:var(--muted)">▼ show</span>
+    </div>
+    <div class="cheatsheet-content hidden" id="cs-content">
+      <div class="cs-row"><span class="cs-code">t = (1, 2, 3)</span><span class="cs-desc">tuple literal</span></div>
+      <div class="cs-row"><span class="cs-code">t = (1,)</span><span class="cs-desc">single element tuple — comma required!</span></div>
+      <div class="cs-row"><span class="cs-code">t[0]</span><span class="cs-desc">access by index</span></div>
+      <div class="cs-row"><span class="cs-code">a, b = t</span><span class="cs-desc">unpack tuple</span></div>
+      <div class="cs-row"><span class="cs-code">a, b, *rest = t</span><span class="cs-desc">unpack with rest</span></div>
+      <div class="cs-row"><span class="cs-code">a, b = b, a</span><span class="cs-desc">swap variables</span></div>
+      <div class="cs-row"><span class="cs-code">t.count(x)</span><span class="cs-desc">count occurrences</span></div>
+      <div class="cs-row"><span class="cs-code">t.index(x)</span><span class="cs-desc">find index of x</span></div>
+      <div class="cs-row"><span class="cs-code">len(t)</span><span class="cs-desc">length</span></div>
+      <div class="cs-row"><span class="cs-code">tuple(lst)</span><span class="cs-desc">convert list to tuple</span></div>
+      <div class="cs-row"><span class="cs-code">d[(1,2)] = "val"</span><span class="cs-desc">tuple as dict key (lists can't!)</span></div>
+      <div class="cs-row"><span class="cs-code">for k, v in d.items()</span><span class="cs-desc">unpacking in loops</span></div>
+    </div>
+  </div>
+  <div id="exercises"></div>
+  <div class="congrats" id="congrats">
+    <h2>Tuple Master! 🎯</h2>
+    <p>You've drilled every tuple operation. On to Stack & Queue!</p>
+  </div>
+</div>
+<script>
+const exercises = [
+  { section: "🔵 Basic Access", tag: "basic", tagLabel: "BASIC", title: "Create a single-element tuple", desc: `# Create a tuple with just one element: 42\n# Careful — this is a common mistake!`, code: `t = <blank>___</blank>`, answers: ["(42,)", "(42, )"], hint: "A trailing comma is required for single-element tuples", explain: "✅ (42,) — without the comma, (42) is just parentheses around an int, not a tuple!" },
+  { tag: "basic", tagLabel: "BASIC", title: "Access by index", desc: `t = (10, 20, 30)\n# Get the second element`, code: `t = (10, 20, 30)\nval = <blank>___</blank>`, answers: ["t[1]"], hint: "Same as list — zero indexed", explain: "✅ t[1] — returns 20. Tuples support indexing just like lists." },
+  { tag: "basic", tagLabel: "BASIC", title: "Get length", desc: `t = (1, 2, 3, 4, 5)\n# Get the number of elements`, code: `t = (1, 2, 3, 4, 5)\nn = <blank>___</blank>`, answers: ["len(t)"], hint: "Same built-in as list, set, dict", explain: "✅ len(t) — returns 5. Consistent across all Python data structures." },
+  { section: "📦 Unpacking", tag: "unpack", tagLabel: "UNPACKING", title: "Unpack a tuple", desc: `t = (3, 7)\n# Unpack into variables a and b`, code: `t = (3, 7)\n<blank>___</blank> = t`, answers: ["a, b", "a,b"], hint: "List the variable names separated by commas", explain: "✅ a, b = t — a gets 3, b gets 7. Tuple unpacking is extremely common in Python." },
+  { tag: "unpack", tagLabel: "UNPACKING", title: "Swap two variables", desc: `a = 5\nb = 10\n# Swap a and b in one line using tuple unpacking`, code: `a = 5\nb = 10\n<blank>___</blank>`, answers: ["a, b = b, a", "a,b = b,a"], hint: "Python evaluates the right side first", explain: "✅ a, b = b, a — Python evaluates right side first, creating a temporary tuple (10, 5). No temp variable needed!" },
+  { tag: "unpack", tagLabel: "UNPACKING", title: "Unpack with rest", desc: `t = (1, 2, 3, 4, 5)\n# Get first element and collect the rest`, code: `t = (1, 2, 3, 4, 5)\n<blank>___</blank> = t`, answers: ["first, *rest", "first,*rest"], hint: "Use * to collect remaining elements", explain: "✅ first, *rest = t — first=1, rest=[2,3,4,5]. The * absorbs remaining elements into a list." },
+  { tag: "unpack", tagLabel: "UNPACKING", title: "Unpack in a loop", desc: `pairs = [(1, 'a'), (2, 'b'), (3, 'c')]\n# Loop and unpack each tuple`, code: `pairs = [(1, 'a'), (2, 'b'), (3, 'c')]\nfor <blank>___</blank>:\n    print(num, letter)`, answers: ["num, letter in pairs", "num,letter in pairs"], hint: "Unpack directly in the for statement", explain: "✅ for num, letter in pairs — unpacks each (int, str) tuple directly. Cleaner than pairs[i][0]." },
+  { section: "🔧 Use Cases", tag: "use", tagLabel: "USE CASE", title: "Tuple as dict key", desc: `# Store value for coordinate (2, 3)\n# Lists can't be dict keys — tuples can!`, code: `d = {}\nd[<blank>___</blank>] = "treasure"`, answers: ["(2, 3)", "(2,3)"], hint: "Tuples are hashable — lists are not", explain: "✅ d[(2, 3)] — tuples are immutable so they're hashable. Lists can't be dict keys. Critical for 2D grid problems!" },
+  { tag: "use", tagLabel: "USE CASE", title: "Convert list to tuple", desc: `lst = [1, 2, 3]\n# Convert to a tuple`, code: `lst = [1, 2, 3]\nt = <blank>___</blank>`, answers: ["tuple(lst)"], hint: "Use the tuple() constructor", explain: "✅ tuple(lst) — returns (1, 2, 3). Common when you need a hashable version of a list (e.g. as a dict key)." },
+  { tag: "use", tagLabel: "USE CASE", title: "Return multiple values", desc: `# A function that returns both min and max\n# Fill in the return statement`, code: `def min_max(lst):\n    return <blank>___</blank>\n\na, b = min_max([3, 1, 4, 1, 5])`, answers: ["min(lst), max(lst)", "(min(lst), max(lst))"], hint: "Returning multiple values creates a tuple automatically", explain: "✅ return min(lst), max(lst) — Python automatically packs multiple return values into a tuple." },
+];
+
+let score = 0, streak = 0, solved = new Set();
+function toggleCS() { const c = document.getElementById('cs-content'); const a = document.getElementById('cs-arrow'); c.classList.toggle('hidden'); a.textContent = c.classList.contains('hidden') ? '▼ show' : '▲ hide'; }
+function normalize(s) { return s.trim().replace(/\s+/g, ' '); }
+function check(idx) {
+  const input = document.getElementById(`inp-${idx}`); const feedback = document.getElementById(`fb-${idx}`); const card = document.getElementById(`card-${idx}`);
+  const val = normalize(input.value);
+  const correct = exercises[idx].answers.some(a => normalize(a) === val);
+  if (correct) {
+    if (!solved.has(idx)) { score++; streak++; solved.add(idx); }
+    feedback.className = 'feedback correct'; feedback.textContent = exercises[idx].explain;
+    card.className = 'exercise-card solved'; input.style.borderColor = 'var(--success)'; updateStats();
+    if (solved.size === exercises.length) setTimeout(() => document.getElementById('congrats').style.display = 'block', 500);
+  } else {
+    streak = 0; feedback.className = 'feedback wrong'; feedback.textContent = '✗ Not quite. Try again — or click Hint.';
+    card.className = 'exercise-card failed'; input.style.borderColor = 'var(--error)'; updateStats();
+  }
+}
+function showHint(idx) { const f = document.getElementById(`fb-${idx}`); f.className = 'feedback hint-show'; f.textContent = `💡 ${exercises[idx].hint}`; }
+function updateStats() { document.getElementById('score').textContent = score; document.getElementById('streak').textContent = streak + '🔥'; document.getElementById('progress').style.width = (solved.size / exercises.length * 100) + '%'; }
+function render() {
+  const container = document.getElementById('exercises'); document.getElementById('total').textContent = exercises.length;
+  let currentSection = '';
+  exercises.forEach((ex, i) => {
+    if (ex.section && ex.section !== currentSection) { currentSection = ex.section; const sh = document.createElement('div'); sh.className = 'section-header'; sh.textContent = ex.section; container.appendChild(sh); }
+    const codeHtml = ex.code.replace(/<blank>(.*?)<\/blank>/g, (_, inner) => `<span class="blank">${inner}</span>`);
+    const card = document.createElement('div'); card.className = 'exercise-card'; card.id = `card-${i}`;
+    card.innerHTML = `<div class="exercise-header"><span class="exercise-num">#${String(i+1).padStart(2,'0')}</span><span class="exercise-tag tag-${ex.tag}">${ex.tagLabel}</span></div><div class="exercise-title">${ex.title}</div><div class="exercise-desc">${ex.desc}</div><div class="code-given">${codeHtml}</div><div class="answer-area"><input class="answer-input" id="inp-${i}" placeholder="type your answer..." onkeydown="if(event.key==='Enter') check(${i})"><button class="btn-check" onclick="check(${i})">Check</button><button class="btn-hint" onclick="showHint(${i})">Hint</button></div><div class="feedback" id="fb-${i}"></div>`;
+    container.appendChild(card);
+  });
+}
+render(); updateStats();
+</script>
+</body>
+</html>

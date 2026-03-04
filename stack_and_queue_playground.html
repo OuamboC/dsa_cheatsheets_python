@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Stack & Queue Mastery</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #0f0a0f; --surface: #1a121a; --card: #261a26; --border: #3e2a3e; --accent: #f76af7; --accent2: #f7c46a; --accent3: #6af7c0; --text: #f0e8f0; --muted: #8a6b8a; --success: #6af76a; --error: #f76a8c; --warn: #f7c46a; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; padding: 2rem; }
+  .grid-bg { position: fixed; inset: 0; z-index: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 40px 40px; opacity: 0.3; }
+  .container { max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
+  header { margin-bottom: 2.5rem; border-left: 3px solid var(--accent); padding-left: 1.2rem; }
+  header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; font-family: 'JetBrains Mono', monospace; }
+  .progress-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; height: 6px; margin-bottom: 2rem; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.5s ease; border-radius: 4px; }
+  .exercise-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.2rem; transition: border-color 0.2s; }
+  .exercise-card.solved { border-color: var(--success); }
+  .exercise-card.failed { border-color: var(--error); }
+  .exercise-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+  .exercise-num { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); background: var(--surface); padding: 0.2rem 0.6rem; border-radius: 3px; border: 1px solid var(--border); }
+  .exercise-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 3px; }
+  .tag-stack { background: rgba(247,106,247,0.15); color: var(--accent); border: 1px solid rgba(247,106,247,0.3); }
+  .tag-queue { background: rgba(247,196,106,0.15); color: var(--accent2); border: 1px solid rgba(247,196,106,0.3); }
+  .tag-deque { background: rgba(106,247,192,0.15); color: var(--accent3); border: 1px solid rgba(106,247,192,0.3); }
+  .exercise-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .exercise-desc { color: var(--muted); font-size: 0.88rem; line-height: 1.6; font-family: 'JetBrains Mono', monospace; margin-bottom: 1rem; }
+  .code-given { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #a8b4d0; margin-bottom: 1rem; line-height: 1.7; white-space: pre; overflow-x: auto; }
+  .blank { background: rgba(247,106,247,0.15); border: 1px dashed var(--accent); border-radius: 3px; padding: 0 0.3rem; color: var(--accent); font-style: italic; }
+  .answer-area { display: flex; gap: 0.8rem; align-items: stretch; flex-wrap: wrap; }
+  .answer-input { flex: 1; min-width: 200px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; color: var(--text); outline: none; transition: border-color 0.2s; }
+  .answer-input:focus { border-color: var(--accent); }
+  .btn-check { padding: 0.7rem 1.5rem; border-radius: 6px; border: none; background: var(--accent); color: #0f0a0f; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; cursor: pointer; font-weight: 700; transition: opacity 0.2s; white-space: nowrap; }
+  .btn-check:hover { opacity: 0.85; }
+  .btn-hint { padding: 0.7rem 1rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .btn-hint:hover { border-color: var(--warn); color: var(--warn); }
+  .feedback { margin-top: 0.8rem; padding: 0.7rem 1rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; display: none; line-height: 1.5; }
+  .feedback.correct { background: rgba(106,247,106,0.1); border: 1px solid rgba(106,247,106,0.3); color: var(--success); display: block; }
+  .feedback.wrong { background: rgba(247,106,140,0.1); border: 1px solid rgba(247,106,140,0.3); color: var(--error); display: block; }
+  .feedback.hint-show { background: rgba(247,196,106,0.1); border: 1px solid rgba(247,196,106,0.3); color: var(--warn); display: block; }
+  .stats-bar { display: flex; gap: 1.5rem; margin-bottom: 2rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.5rem; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 0.2rem; }
+  .stat-val { font-size: 1.4rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+  .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .section-header { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 1.5rem 0 0.8rem; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 0.8rem; }
+  .section-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .cheatsheet { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 2; }
+  .cheatsheet-toggle { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+  .cheatsheet-toggle span { color: var(--accent); font-weight: 700; }
+  .cheatsheet-content { margin-top: 1rem; }
+  .cs-row { display: flex; gap: 1rem; padding: 0.2rem 0; }
+  .cs-code { color: var(--accent3); min-width: 280px; }
+  .cs-desc { color: var(--muted); }
+  .hidden { display: none; }
+  .congrats { text-align: center; padding: 3rem 2rem; background: var(--card); border: 1px solid var(--success); border-radius: 8px; display: none; }
+  .congrats h2 { font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
+  .congrats p { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="container">
+  <header>
+    <h1>Stack & Queue Mastery</h1>
+    <p>// LIFO vs FIFO — the two most important interview patterns</p>
+  </header>
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-val" id="score" style="color:var(--accent)">0</span><span class="stat-label">Solved</span></div>
+    <div class="stat"><span class="stat-val" id="total" style="color:var(--muted)">0</span><span class="stat-label">Total</span></div>
+    <div class="stat"><span class="stat-val" id="streak" style="color:var(--warn)">0🔥</span><span class="stat-label">Streak</span></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+  <div class="cheatsheet">
+    <div class="cheatsheet-toggle" onclick="toggleCS()">
+      <span>📖 Quick Reference</span>
+      <span id="cs-arrow" style="color:var(--muted)">▼ show</span>
+    </div>
+    <div class="cheatsheet-content hidden" id="cs-content">
+      <div class="cs-row"><span class="cs-code" style="color:#f76af7">── STACK (LIFO) ──</span><span class="cs-desc">Last In First Out</span></div>
+      <div class="cs-row"><span class="cs-code">stack = []</span><span class="cs-desc">use a plain list</span></div>
+      <div class="cs-row"><span class="cs-code">stack.append(x)</span><span class="cs-desc">push — O(1)</span></div>
+      <div class="cs-row"><span class="cs-code">stack.pop()</span><span class="cs-desc">pop — O(1)</span></div>
+      <div class="cs-row"><span class="cs-code">stack[-1]</span><span class="cs-desc">peek top — O(1)</span></div>
+      <div class="cs-row"><span class="cs-code">not stack</span><span class="cs-desc">check if empty</span></div>
+      <div class="cs-row"><span class="cs-code" style="color:#f7c46a">── QUEUE (FIFO) ──</span><span class="cs-desc">First In First Out</span></div>
+      <div class="cs-row"><span class="cs-code">from collections import deque</span><span class="cs-desc">always use deque for queues</span></div>
+      <div class="cs-row"><span class="cs-code">q = deque()</span><span class="cs-desc">empty queue</span></div>
+      <div class="cs-row"><span class="cs-code">q.append(x)</span><span class="cs-desc">enqueue (add to right) — O(1)</span></div>
+      <div class="cs-row"><span class="cs-code">q.popleft()</span><span class="cs-desc">dequeue (remove from left) — O(1)</span></div>
+      <div class="cs-row"><span class="cs-code">q[0]</span><span class="cs-desc">peek front</span></div>
+      <div class="cs-row"><span class="cs-code" style="color:#6af7c0">── DEQUE (both ends) ──</span><span class="cs-desc"></span></div>
+      <div class="cs-row"><span class="cs-code">q.appendleft(x)</span><span class="cs-desc">add to left — O(1)</span></div>
+      <div class="cs-row"><span class="cs-code">q.pop()</span><span class="cs-desc">remove from right — O(1)</span></div>
+      <div class="cs-row"><span class="cs-code">q.popleft()</span><span class="cs-desc">remove from left — O(1)</span></div>
+    </div>
+  </div>
+  <div id="exercises"></div>
+  <div class="congrats" id="congrats">
+    <h2>Stack & Queue Master! 🎯</h2>
+    <p>All data structure drills complete. Go back to NeetCode and crush Group Anagrams. 🚀</p>
+  </div>
+</div>
+<script>
+const exercises = [
+  { section: "📚 Stack — LIFO", tag: "stack", tagLabel: "STACK", title: "Push to stack", desc: `stack = []\n# Push value 5 onto the stack`, code: `stack = []\n<blank>___</blank>`, answers: ["stack.append(5)"], hint: "Stack push = list append", explain: "✅ stack.append(5) — stacks in Python are just lists. append() is push, O(1)." },
+  { tag: "stack", tagLabel: "STACK", title: "Pop from stack", desc: `stack = [1, 2, 3]\n# Pop the top element`, code: `stack = [1, 2, 3]\nval = <blank>___</blank>`, answers: ["stack.pop()"], hint: ".pop() with no argument removes the last element", explain: "✅ stack.pop() — removes and returns 3 (the top/last). O(1). LIFO — Last In First Out." },
+  { tag: "stack", tagLabel: "STACK", title: "Peek top of stack", desc: `stack = [1, 2, 3]\n# Look at the top without removing it`, code: `stack = [1, 2, 3]\ntop = <blank>___</blank>`, answers: ["stack[-1]"], hint: "Negative indexing gives the last element", explain: "✅ stack[-1] — peeks without removing. stack.pop() would remove it." },
+  { tag: "stack", tagLabel: "STACK", title: "Check if stack is empty", desc: `stack = []\n# Check if the stack is empty`, code: `stack = []\nif <blank>___</blank>:\n    print("empty")`, answers: ["not stack", "len(stack) == 0"], hint: "Empty list is falsy in Python", explain: "✅ not stack — empty list is falsy. Pythonic way to check. Also: len(stack) == 0." },
+  { tag: "stack", tagLabel: "STACK", title: "Stack pattern — balanced check", desc: `# Classic stack use: process items and undo\n# Push to stack, then check top before popping`, code: `stack = []\nstack.append('(')\n# Check top without removing\nif <blank>___</blank> == '(':\n    stack.pop()`, answers: ["stack[-1]"], hint: "Peek the top first, then decide to pop", explain: "✅ stack[-1] — peek before deciding to pop. Classic pattern for bracket matching problems!" },
+  { section: "🚶 Queue — FIFO", tag: "queue", tagLabel: "QUEUE", title: "Import deque", desc: `# Import deque for an efficient queue\n# Never use a plain list for queues!`, code: `<blank>___</blank>`, answers: ["from collections import deque"], hint: "It's in the collections module", explain: "✅ from collections import deque — list.pop(0) is O(n). deque.popleft() is O(1). Always use deque for queues." },
+  { tag: "queue", tagLabel: "QUEUE", title: "Enqueue (add to queue)", desc: `from collections import deque\nq = deque()\n# Add value 10 to the queue`, code: `from collections import deque\nq = deque()\n<blank>___</blank>`, answers: ["q.append(10)"], hint: "Add to the right side — same as list", explain: "✅ q.append(10) — enqueue adds to the right (end). FIFO — First In First Out." },
+  { tag: "queue", tagLabel: "QUEUE", title: "Dequeue (remove from queue)", desc: `from collections import deque\nq = deque([1, 2, 3])\n# Remove the front element`, code: `from collections import deque\nq = deque([1, 2, 3])\nval = <blank>___</blank>`, answers: ["q.popleft()"], hint: "Remove from the LEFT side — this is what makes it O(1)", explain: "✅ q.popleft() — removes from the front (left) in O(1). This is why deque beats list for queues!" },
+  { tag: "queue", tagLabel: "QUEUE", title: "Peek front of queue", desc: `from collections import deque\nq = deque([10, 20, 30])\n# Look at the front without removing`, code: `from collections import deque\nq = deque([10, 20, 30])\nfront = <blank>___</blank>`, answers: ["q[0]"], hint: "Index 0 is the front of the queue", explain: "✅ q[0] — peeks the front element (10) without removing it." },
+  { section: "⚡ Deque — Both Ends", tag: "deque", tagLabel: "DEQUE", title: "Add to left side", desc: `from collections import deque\nq = deque([2, 3, 4])\n# Add 1 to the LEFT side`, code: `from collections import deque\nq = deque([2, 3, 4])\n<blank>___</blank>`, answers: ["q.appendleft(1)"], hint: "Mirror of append() but for the left", explain: "✅ q.appendleft(1) — deque is now [1, 2, 3, 4]. O(1). Useful for sliding window problems." },
+  { tag: "deque", tagLabel: "DEQUE", title: "Convert deque to list", desc: `from collections import deque\nq = deque([1, 2, 3])\n# Convert back to a regular list`, code: `from collections import deque\nq = deque([1, 2, 3])\nresult = <blank>___</blank>`, answers: ["list(q)"], hint: "Use the list() constructor", explain: "✅ list(q) — returns [1, 2, 3]. Useful when you need to return a list from a BFS result." },
+  { tag: "deque", tagLabel: "DEQUE", title: "BFS pattern — initialise with start node", desc: `from collections import deque\nstart = 0\n# Initialise a BFS queue with the start node`, code: `from collections import deque\nstart = 0\nq = <blank>___</blank>`, answers: ["deque([start])", "deque([0])"], hint: "Pass a list to deque() to initialise it", explain: "✅ deque([start]) — BFS always starts by adding the root/start node. Then loop: while q: node = q.popleft()..." },
+];
+
+let score = 0, streak = 0, solved = new Set();
+function toggleCS() { const c = document.getElementById('cs-content'); const a = document.getElementById('cs-arrow'); c.classList.toggle('hidden'); a.textContent = c.classList.contains('hidden') ? '▼ show' : '▲ hide'; }
+function normalize(s) { return s.trim().replace(/\s+/g, ' '); }
+function check(idx) {
+  const input = document.getElementById(`inp-${idx}`); const feedback = document.getElementById(`fb-${idx}`); const card = document.getElementById(`card-${idx}`);
+  const val = normalize(input.value);
+  const correct = exercises[idx].answers.some(a => normalize(a) === val);
+  if (correct) {
+    if (!solved.has(idx)) { score++; streak++; solved.add(idx); }
+    feedback.className = 'feedback correct'; feedback.textContent = exercises[idx].explain;
+    card.className = 'exercise-card solved'; input.style.borderColor = 'var(--success)'; updateStats();
+    if (solved.size === exercises.length) setTimeout(() => document.getElementById('congrats').style.display = 'block', 500);
+  } else {
+    streak = 0; feedback.className = 'feedback wrong'; feedback.textContent = '✗ Not quite. Try again — or click Hint.';
+    card.className = 'exercise-card failed'; input.style.borderColor = 'var(--error)'; updateStats();
+  }
+}
+function showHint(idx) { const f = document.getElementById(`fb-${idx}`); f.className = 'feedback hint-show'; f.textContent = `💡 ${exercises[idx].hint}`; }
+function updateStats() { document.getElementById('score').textContent = score; document.getElementById('streak').textContent = streak + '🔥'; document.getElementById('progress').style.width = (solved.size / exercises.length * 100) + '%'; }
+function render() {
+  const container = document.getElementById('exercises'); document.getElementById('total').textContent = exercises.length;
+  let currentSection = '';
+  exercises.forEach((ex, i) => {
+    if (ex.section && ex.section !== currentSection) { currentSection = ex.section; const sh = document.createElement('div'); sh.className = 'section-header'; sh.textContent = ex.section; container.appendChild(sh); }
+    const codeHtml = ex.code.replace(/<blank>(.*?)<\/blank>/g, (_, inner) => `<span class="blank">${inner}</span>`);
+    const card = document.createElement('div'); card.className = 'exercise-card'; card.id = `card-${i}`;
+    card.innerHTML = `<div class="exercise-header"><span class="exercise-num">#${String(i+1).padStart(2,'0')}</span><span class="exercise-tag tag-${ex.tag}">${ex.tagLabel}</span></div><div class="exercise-title">${ex.title}</div><div class="exercise-desc">${ex.desc}</div><div class="code-given">${codeHtml}</div><div class="answer-area"><input class="answer-input" id="inp-${i}" placeholder="type your answer..." onkeydown="if(event.key==='Enter') check(${i})"><button class="btn-check" onclick="check(${i})">Check</button><button class="btn-hint" onclick="showHint(${i})">Hint</button></div><div class="feedback" id="fb-${i}"></div>`;
+    container.appendChild(card);
+  });
+}
+render(); updateStats();
+</script>
+</body>
+</html>

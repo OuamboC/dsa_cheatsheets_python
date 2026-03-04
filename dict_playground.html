@@ -322,11 +322,21 @@
   }
 
   .congrats p { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+  .home-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+  color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); background: var(--surface);
+  padding: 0.4rem 1rem; border-radius: 4px;
+  margin-bottom: 1.5rem; transition: all 0.2s;
+}
+.home-btn:hover { border-color: var(--accent); color: var(--accent); }
 </style>
 </head>
 <body>
 <div class="grid-bg"></div>
 <div class="container">
+    <a href="index.html" class="home-btn">← Home</a>
 
   <header>
     <h1>Python Dict Mastery</h1>
@@ -380,7 +390,6 @@
     <h2>All Done! 🎯</h2>
     <p>You've drilled every dict operation. Go back to NeetCode and crush Group Anagrams.</p>
   </div>
-
 </div>
 
 <script>

@@ -402,9 +402,62 @@
     <script>
       // Store return URL for after login
       const urlParams = new URLSearchParams(window.location.search);
-      const returnUrl = urlParams.get("return") || document.referrer;
+      let returnUrl = urlParams.get("return") || document.referrer;
+
+      // Decode if it's URL-encoded
+      if (returnUrl) {
+        try {
+          returnUrl = decodeURIComponent(returnUrl);
+        } catch (e) {
+          // Already decoded or invalid
+        }
+      }
+
       if (returnUrl && !returnUrl.includes("login.html")) {
         sessionStorage.setItem("returnUrl", returnUrl);
+      }
+
+      // Function to redirect after auth
+      async function handleAuthRedirect() {
+        console.log("Checking auth status...");
+
+        // Wait for Supabase to be ready
+        if (!window.supabase) {
+          console.log("Waiting for Supabase...");
+          setTimeout(handleAuthRedirect, 200);
+          return;
+        }
+
+        try {
+          // Create client if needed
+          const client = window.supabase.createClient(
+            window.supabaseConfig.url,
+            window.supabaseConfig.anonKey,
+          );
+
+          const {
+            data: { session },
+          } = await client.auth.getSession();
+
+          if (session && session.user) {
+            console.log("User authenticated:", session.user.email);
+            const storedReturn = sessionStorage.getItem("returnUrl");
+            let redirectTo = storedReturn || "index.html";
+
+            // Convert full URL to relative path if needed
+            if (redirectTo.includes(window.location.origin)) {
+              redirectTo = redirectTo.replace(window.location.origin, "");
+            }
+
+            console.log("Redirecting to:", redirectTo);
+            sessionStorage.removeItem("returnUrl");
+            window.location.href = redirectTo;
+          } else {
+            console.log("No session found, staying on login page");
+          }
+        } catch (e) {
+          console.error("Auth check error:", e);
+        }
       }
 
       // Initialize Supabase and check auth
@@ -419,16 +472,8 @@
           console.error("initSupabase function not found!");
         }
 
-        // Check if already logged in
-        setTimeout(() => {
-          if (window.authModule && window.authModule.isAuthenticated()) {
-            console.log("User already authenticated, redirecting...");
-            const storedReturn = sessionStorage.getItem("returnUrl");
-            const redirectTo = storedReturn || "index.html";
-            sessionStorage.removeItem("returnUrl");
-            window.location.href = redirectTo;
-          }
-        }, 500);
+        // Check auth after a short delay to allow session to establish
+        setTimeout(handleAuthRedirect, 800);
       });
     </script>
   </body>

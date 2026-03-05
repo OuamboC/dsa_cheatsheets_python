@@ -87,7 +87,11 @@ function handleAuthStateChanged(event, session) {
     updateAuthUI(null);
     injectAuthHeader(null); // Remove floating header
     // Redirect to login if on a protected page
-    if (typeof requireAuth === 'function' && !window.location.pathname.includes('login') && !window.location.pathname.includes('index')) {
+    if (
+      typeof requireAuth === "function" &&
+      !window.location.pathname.includes("login") &&
+      !window.location.pathname.includes("index")
+    ) {
       showAuthGate();
     }
   }
@@ -747,7 +751,7 @@ function injectAuthGateStyles() {
 function injectAuthHeader(user) {
   // Inject styles first
   injectAuthGateStyles();
-  
+
   // Remove existing header if any
   const existing = document.getElementById("auth-floating-header");
   if (existing) existing.remove();

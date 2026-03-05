@@ -856,8 +856,14 @@ function hideAuthGate() {
 
 // Require authentication for playground pages
 function requireAuth() {
-  // Wait for auth state from Supabase first, don't show gate immediately
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  // Check auth with retries
   const checkAuth = async () => {
+    attempts++;
+    console.log(`requireAuth check attempt ${attempts}...`);
+    
     // Check if already authenticated from memory
     if (currentUser) {
       console.log("User already in memory:", currentUser.email);
@@ -870,12 +876,11 @@ function requireAuth() {
       // Try to initialize
       initSupabase();
       // Wait a bit for initialization
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 300));
     }
 
     if (supabaseClient) {
       try {
-        console.log("Checking session for requireAuth...");
         const {
           data: { session },
         } = await supabaseClient.auth.getSession();
@@ -891,8 +896,14 @@ function requireAuth() {
       }
     }
 
-    // No session found, show gate
-    console.log("No session found, showing auth gate");
+    // Retry if we haven't reached max attempts
+    if (attempts < maxAttempts) {
+      setTimeout(checkAuth, 300);
+      return;
+    }
+
+    // No session found after all attempts, show gate
+    console.log("No session found after all attempts, showing auth gate");
     showAuthGate();
   };
 

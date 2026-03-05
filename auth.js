@@ -65,6 +65,8 @@ async function checkSession() {
     if (session) {
       currentUser = session.user;
       updateAuthUI(currentUser);
+      injectAuthHeader(currentUser); // Show floating header
+      hideAuthGate(); // Remove gate if showing
       loadUserProgress();
     }
   } catch (e) {
@@ -77,11 +79,17 @@ function handleAuthStateChanged(event, session) {
   if (event === "SIGNED_IN" && session) {
     currentUser = session.user;
     updateAuthUI(currentUser);
+    injectAuthHeader(currentUser); // Show floating header
     loadUserProgress();
     hideAuthGate(); // Remove auth gate on sign-in
   } else if (event === "SIGNED_OUT") {
     currentUser = null;
     updateAuthUI(null);
+    injectAuthHeader(null); // Remove floating header
+    // Redirect to login if on a protected page
+    if (typeof requireAuth === 'function' && !window.location.pathname.includes('login') && !window.location.pathname.includes('index')) {
+      showAuthGate();
+    }
   }
 }
 
@@ -145,7 +153,7 @@ async function signInWithGoogle() {
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin + "/index.html",
+        redirectTo: window.location.origin + "/login.html",
       },
     });
 
@@ -186,7 +194,7 @@ async function signInWithGitHub() {
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: window.location.origin + "/index.html",
+        redirectTo: window.location.origin + "/login.html",
       },
     });
 
@@ -688,13 +696,89 @@ function injectAuthGateStyles() {
       content: '✓ ';
       color: #6af76a;
     }
+    .auth-floating-header {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(19, 19, 31, 0.95);
+      border: 1px solid #2a2a4a;
+      border-radius: 50px;
+      padding: 0.5rem 1rem;
+      backdrop-filter: blur(10px);
+    }
+    .auth-floating-header .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid #7c6af7;
+    }
+    .auth-floating-header .user-name {
+      color: #e8e8f4;
+      font-size: 0.85rem;
+      font-weight: 600;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .auth-floating-header .btn-logout {
+      background: transparent;
+      border: 1px solid #f76a6a;
+      color: #f76a6a;
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .auth-floating-header .btn-logout:hover {
+      background: #f76a6a;
+      color: #0f0a0a;
+    }
   `;
   document.head.appendChild(style);
+}
+
+// Inject floating auth header for playground pages
+function injectAuthHeader(user) {
+  // Inject styles first
+  injectAuthGateStyles();
+  
+  // Remove existing header if any
+  const existing = document.getElementById("auth-floating-header");
+  if (existing) existing.remove();
+
+  if (!user) return;
+
+  const metadata = user.user_metadata || {};
+  const avatar =
+    metadata.avatar_url ||
+    metadata.picture ||
+    "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%228%22 r=%224%22 fill=%22%237c6af7%22/><path d=%22M4 20c0-4 4-6 8-6s8 2 8 6%22 fill=%22%237c6af7%22/></svg>";
+  const name =
+    metadata.full_name || metadata.name || user.email?.split("@")[0] || "User";
+
+  const header = document.createElement("div");
+  header.className = "auth-floating-header";
+  header.id = "auth-floating-header";
+  header.innerHTML = `
+    <img class="user-avatar" src="${avatar}" alt="avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%228%22 r=%224%22 fill=%22%237c6af7%22/><path d=%22M4 20c0-4 4-6 8-6s8 2 8 6%22 fill=%22%237c6af7%22/></svg>'">
+    <span class="user-name">${name}</span>
+    <button class="btn-logout" onclick="signOutUser()">Log Out</button>
+  `;
+  document.body.appendChild(header);
 }
 
 // Show auth gate overlay
 function showAuthGate() {
   injectAuthGateStyles();
+
+  // Store current URL so we can return after login
+  const returnUrl = encodeURIComponent(window.location.href);
 
   const overlay = document.createElement("div");
   overlay.className = "auth-gate-overlay";
@@ -706,7 +790,7 @@ function showAuthGate() {
       <p class="auth-gate-text">
         Create a free account to access the playground exercises and track your progress.
       </p>
-      <a href="login.html" class="auth-gate-btn">Sign In to Continue</a>
+      <a href="login.html?return=${returnUrl}" class="auth-gate-btn">Sign In to Continue</a>
       <div class="auth-gate-features">
         <p>With an account you get:</p>
         <ul>

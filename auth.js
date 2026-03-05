@@ -76,12 +76,33 @@ async function checkSession() {
 
 // Handle auth state changes
 function handleAuthStateChanged(event, session) {
+  console.log("Auth state changed:", event);
+  
   if (event === "SIGNED_IN" && session) {
     currentUser = session.user;
+    console.log("User signed in:", session.user.email);
     updateAuthUI(currentUser);
     injectAuthHeader(currentUser); // Show floating header
     loadUserProgress();
     hideAuthGate(); // Remove auth gate on sign-in
+    
+    // If on login page, redirect to stored URL or index
+    if (window.location.pathname.includes("login")) {
+      const storedReturn = sessionStorage.getItem("returnUrl");
+      let redirectTo = storedReturn || "index.html";
+      
+      // Convert full URL to relative path if needed
+      if (redirectTo.includes(window.location.origin)) {
+        redirectTo = redirectTo.replace(window.location.origin, "");
+      }
+      if (redirectTo.startsWith("/")) {
+        redirectTo = redirectTo.substring(1);
+      }
+      
+      console.log("Redirecting from login to:", redirectTo);
+      sessionStorage.removeItem("returnUrl");
+      window.location.href = redirectTo;
+    }
   } else if (event === "SIGNED_OUT") {
     currentUser = null;
     updateAuthUI(null);

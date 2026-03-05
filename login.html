@@ -440,10 +440,13 @@
       const isOAuthCallback = window.location.hash && 
         (window.location.hash.includes("access_token") || window.location.hash.includes("error"));
 
+      console.log("Full URL:", window.location.href);
+      console.log("Hash:", window.location.hash);
+      console.log("Is OAuth callback:", isOAuthCallback);
+
       // Initialize Supabase and check auth
       document.addEventListener("DOMContentLoaded", async () => {
         console.log("Login page loaded");
-        console.log("Is OAuth callback:", isOAuthCallback);
 
         // Ensure Supabase is initialized
         if (typeof initSupabase === "function") {

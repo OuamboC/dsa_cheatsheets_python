@@ -8,6 +8,8 @@
 let supabaseClient = null;
 let currentUser = null;
 let supabaseInitialized = false;
+let sessionCheckComplete = false;
+let sessionCheckPromise = null;
 
 function initSupabase() {
   console.log("Initializing Supabase...");
@@ -45,8 +47,8 @@ function initSupabase() {
     // Listen for auth state changes
     supabaseClient.auth.onAuthStateChange(handleAuthStateChanged);
 
-    // Check initial session
-    checkSession();
+    // Check initial session and store promise
+    sessionCheckPromise = checkSession();
     return true;
   } catch (e) {
     console.error("Supabase init error:", e);
@@ -56,21 +58,30 @@ function initSupabase() {
 
 // Check for existing session
 async function checkSession() {
-  if (!supabaseClient) return;
+  if (!supabaseClient) {
+    sessionCheckComplete = true;
+    return;
+  }
 
   try {
+    console.log("Checking existing session...");
     const {
       data: { session },
     } = await supabaseClient.auth.getSession();
     if (session) {
+      console.log("Existing session found:", session.user.email);
       currentUser = session.user;
       updateAuthUI(currentUser);
       injectAuthHeader(currentUser); // Show floating header
       hideAuthGate(); // Remove gate if showing
       loadUserProgress();
+    } else {
+      console.log("No existing session");
     }
   } catch (e) {
     console.error("Session check error:", e);
+  } finally {
+    sessionCheckComplete = true;
   }
 }
 
@@ -856,36 +867,44 @@ function hideAuthGate() {
 
 // Require authentication for playground pages
 function requireAuth() {
-  let attempts = 0;
-  const maxAttempts = 10;
-  
   // Check auth with retries
   const checkAuth = async () => {
-    attempts++;
-    console.log(`requireAuth check attempt ${attempts}...`);
+    console.log("requireAuth checking...");
     
-    // Check if already authenticated from memory
+    // Initialize Supabase if not already
+    if (!supabaseClient) {
+      initSupabase();
+    }
+    
+    // Wait for the initial session check to complete
+    if (sessionCheckPromise) {
+      console.log("Waiting for session check promise...");
+      await sessionCheckPromise;
+    }
+    
+    // Also wait a bit if session check isn't complete yet
+    let waitAttempts = 0;
+    while (!sessionCheckComplete && waitAttempts < 20) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      waitAttempts++;
+    }
+    
+    console.log("Session check complete, currentUser:", currentUser?.email || "null");
+    
+    // Check if authenticated
     if (currentUser) {
-      console.log("User already in memory:", currentUser.email);
+      console.log("User authenticated:", currentUser.email);
       hideAuthGate();
       injectAuthHeader(currentUser);
       return;
     }
-
-    if (!supabaseClient) {
-      // Try to initialize
-      initSupabase();
-      // Wait a bit for initialization
-      await new Promise((resolve) => setTimeout(resolve, 300));
-    }
-
+    
+    // Double-check with Supabase directly
     if (supabaseClient) {
       try {
-        const {
-          data: { session },
-        } = await supabaseClient.auth.getSession();
+        const { data: { session } } = await supabaseClient.auth.getSession();
         if (session && session.user) {
-          console.log("Session found:", session.user.email);
+          console.log("Session found on second check:", session.user.email);
           currentUser = session.user;
           hideAuthGate();
           injectAuthHeader(currentUser);
@@ -896,14 +915,8 @@ function requireAuth() {
       }
     }
 
-    // Retry if we haven't reached max attempts
-    if (attempts < maxAttempts) {
-      setTimeout(checkAuth, 300);
-      return;
-    }
-
-    // No session found after all attempts, show gate
-    console.log("No session found after all attempts, showing auth gate");
+    // No session found, show gate
+    console.log("No session found, showing auth gate");
     showAuthGate();
   };
 

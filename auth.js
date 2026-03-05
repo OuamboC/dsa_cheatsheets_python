@@ -4,15 +4,15 @@
  * Uses Supabase for auth + progress tracking + daily streaks
  */
 
-// Initialize Supabase
-let supabase = null;
+// Initialize Supabase - use supabaseClient to avoid conflict with SDK's global 'supabase'
+let supabaseClient = null;
 let currentUser = null;
 let supabaseInitialized = false;
 
 function initSupabase() {
   console.log("Initializing Supabase...");
 
-  if (supabaseInitialized && supabase) {
+  if (supabaseInitialized && supabaseClient) {
     console.log("Supabase already initialized");
     return true;
   }
@@ -34,7 +34,7 @@ function initSupabase() {
   }
 
   try {
-    supabase = window.supabase.createClient(
+    supabaseClient = window.supabase.createClient(
       window.supabaseConfig.url,
       window.supabaseConfig.anonKey,
     );
@@ -43,7 +43,7 @@ function initSupabase() {
     supabaseInitialized = true;
 
     // Listen for auth state changes
-    supabase.auth.onAuthStateChange(handleAuthStateChanged);
+    supabaseClient.auth.onAuthStateChange(handleAuthStateChanged);
 
     // Check initial session
     checkSession();
@@ -56,12 +56,12 @@ function initSupabase() {
 
 // Check for existing session
 async function checkSession() {
-  if (!supabase) return;
+  if (!supabaseClient) return;
 
   try {
     const {
       data: { session },
-    } = await supabase.auth.getSession();
+    } = await supabaseClient.auth.getSession();
     if (session) {
       currentUser = session.user;
       updateAuthUI(currentUser);
@@ -120,11 +120,11 @@ async function signInWithGoogle() {
   console.log("signInWithGoogle called");
 
   // Try to initialize if not already
-  if (!supabase) {
+  if (!supabaseClient) {
     initSupabase();
   }
 
-  if (!supabase) {
+  if (!supabaseClient) {
     console.error("Supabase is not initialized");
     const errorEl = document.getElementById("auth-error");
     if (errorEl) {
@@ -141,7 +141,7 @@ async function signInWithGoogle() {
 
   try {
     console.log("Calling signInWithOAuth for Google...");
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: window.location.origin + "/index.html",
@@ -161,11 +161,11 @@ async function signInWithGitHub() {
   console.log("signInWithGitHub called");
 
   // Try to initialize if not already
-  if (!supabase) {
+  if (!supabaseClient) {
     initSupabase();
   }
 
-  if (!supabase) {
+  if (!supabaseClient) {
     console.error("Supabase is not initialized");
     const errorEl = document.getElementById("auth-error");
     if (errorEl) {
@@ -182,7 +182,7 @@ async function signInWithGitHub() {
 
   try {
     console.log("Calling signInWithOAuth for GitHub...");
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "github",
       options: {
         redirectTo: window.location.origin + "/index.html",
@@ -208,10 +208,10 @@ function showLoading(show) {
 
 // Sign out
 async function signOutUser() {
-  if (!supabase) return;
+  if (!supabaseClient) return;
 
   try {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     currentUser = null;
     updateAuthUI(null);
     localStorage.removeItem("dsa_last_sync");
@@ -268,11 +268,11 @@ function loadProgressLocal() {
 
 // Save progress to Supabase
 async function saveProgressCloud(progress) {
-  if (!currentUser || !supabase) return false;
+  if (!currentUser || !supabaseClient) return false;
 
   try {
     const key = getProgressKey();
-    const { error } = await supabase.from("user_progress").upsert(
+    const { error } = await supabaseClient.from("user_progress").upsert(
       {
         user_id: currentUser.id,
         page_key: key,
@@ -296,11 +296,11 @@ async function saveProgressCloud(progress) {
 
 // Load user progress from Supabase
 async function loadUserProgress() {
-  if (!currentUser || !supabase) return null;
+  if (!currentUser || !supabaseClient) return null;
 
   try {
     const key = getProgressKey();
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("user_progress")
       .select("progress_data")
       .eq("user_id", currentUser.id)
@@ -362,7 +362,7 @@ function applyProgressToUI(progress) {
 
 // Get all progress for dashboard
 async function getAllProgress() {
-  if (!currentUser || !supabase) {
+  if (!currentUser || !supabaseClient) {
     // Return local progress
     const structures = [
       "dict_playground",
@@ -384,7 +384,7 @@ async function getAllProgress() {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("user_progress")
       .select("page_key, progress_data")
       .eq("user_id", currentUser.id);
@@ -433,10 +433,10 @@ function saveStreakLocal(streakData) {
 
 // Save streak to Supabase
 async function saveStreakCloud(streakData) {
-  if (!currentUser || !supabase) return false;
+  if (!currentUser || !supabaseClient) return false;
 
   try {
-    const { error } = await supabase.from("user_progress").upsert(
+    const { error } = await supabaseClient.from("user_progress").upsert(
       {
         user_id: currentUser.id,
         playground_name: "daily_streak",
@@ -458,10 +458,10 @@ async function saveStreakCloud(streakData) {
 
 // Load streak from Supabase
 async function loadStreakCloud() {
-  if (!currentUser || !supabase) return null;
+  if (!currentUser || !supabaseClient) return null;
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("user_progress")
       .select("completed_items")
       .eq("user_id", currentUser.id)

@@ -78,6 +78,7 @@ function handleAuthStateChanged(event, session) {
     currentUser = session.user;
     updateAuthUI(currentUser);
     loadUserProgress();
+    hideAuthGate(); // Remove auth gate on sign-in
   } else if (event === "SIGNED_OUT") {
     currentUser = null;
     updateAuthUI(null);
@@ -599,6 +600,173 @@ function hasPracticedToday() {
   return streakData.lastPracticeDate === getTodayString();
 }
 
+// ========== AUTH GATE FOR PLAYGROUNDS ==========
+
+// Inject auth gate styles
+function injectAuthGateStyles() {
+  if (document.getElementById("auth-gate-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "auth-gate-styles";
+  style.textContent = `
+    .auth-gate-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(8, 8, 16, 0.98);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(10px);
+    }
+    .auth-gate-content {
+      text-align: center;
+      max-width: 420px;
+      padding: 3rem;
+      background: linear-gradient(135deg, #13131f 0%, #1a1a2e 100%);
+      border: 1px solid #2a2a4a;
+      border-radius: 16px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+    }
+    .auth-gate-icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+    }
+    .auth-gate-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #f76a6a, #f7c46a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .auth-gate-text {
+      color: #8a8aaa;
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    .auth-gate-btn {
+      display: inline-block;
+      padding: 1rem 2.5rem;
+      background: linear-gradient(135deg, #7c6af7, #a78bfa);
+      color: white;
+      font-weight: 700;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .auth-gate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(124, 106, 247, 0.4);
+    }
+    .auth-gate-features {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #2a2a4a;
+    }
+    .auth-gate-features p {
+      color: #6a6a8a;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+    .auth-gate-features ul {
+      list-style: none;
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .auth-gate-features li {
+      color: #9a9aba;
+      font-size: 0.8rem;
+    }
+    .auth-gate-features li::before {
+      content: '✓ ';
+      color: #6af76a;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// Show auth gate overlay
+function showAuthGate() {
+  injectAuthGateStyles();
+
+  const overlay = document.createElement("div");
+  overlay.className = "auth-gate-overlay";
+  overlay.id = "auth-gate";
+  overlay.innerHTML = `
+    <div class="auth-gate-content">
+      <div class="auth-gate-icon">🔐</div>
+      <h2 class="auth-gate-title">Sign In Required</h2>
+      <p class="auth-gate-text">
+        Create a free account to access the playground exercises and track your progress.
+      </p>
+      <a href="login.html" class="auth-gate-btn">Sign In to Continue</a>
+      <div class="auth-gate-features">
+        <p>With an account you get:</p>
+        <ul>
+          <li>Daily streaks</li>
+          <li>Progress tracking</li>
+          <li>Cloud sync</li>
+        </ul>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+// Hide auth gate
+function hideAuthGate() {
+  const gate = document.getElementById("auth-gate");
+  if (gate) gate.remove();
+}
+
+// Require authentication for playground pages
+function requireAuth() {
+  // Show gate immediately while checking auth
+  showAuthGate();
+
+  // Check if already authenticated
+  if (currentUser) {
+    hideAuthGate();
+    return;
+  }
+
+  // Wait for auth state from Supabase
+  const checkAuth = async () => {
+    if (!supabaseClient) {
+      // Try to initialize
+      initSupabase();
+      // Wait a bit for initialization
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    if (supabaseClient) {
+      try {
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
+        if (session && session.user) {
+          currentUser = session.user;
+          hideAuthGate();
+          return;
+        }
+      } catch (e) {
+        console.error("Auth check error:", e);
+      }
+    }
+
+    // No session found, keep gate visible
+  };
+
+  checkAuth();
+}
+
 // ========== INITIALIZATION ==========
 
 // Initialize auth on page load
@@ -630,3 +798,5 @@ window.signInWithGitHub = signInWithGitHub;
 window.signOutUser = signOutUser;
 window.recordPractice = recordPractice;
 window.getStreakData = getStreakData;
+window.requireAuth = requireAuth;
+window.hideAuthGate = hideAuthGate;

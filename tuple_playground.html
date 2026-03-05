@@ -130,7 +130,7 @@ function check(idx) {
   const val = normalize(input.value);
   const correct = exercises[idx].answers.some(a => normalize(a) === val);
   if (correct) {
-    if (!solved.has(idx)) { score++; streak++; solved.add(idx); }
+    if (!solved.has(idx)) { score++; streak++; solved.add(idx); if (typeof recordPractice === 'function') recordPractice(); }
     feedback.className = 'feedback correct'; feedback.textContent = exercises[idx].explain;
     card.className = 'exercise-card solved'; input.style.borderColor = 'var(--success)'; updateStats();
     if (solved.size === exercises.length) setTimeout(() => document.getElementById('congrats').style.display = 'block', 500);
@@ -154,5 +154,9 @@ function render() {
 }
 render(); updateStats();
 </script>
+<!-- Supabase SDK and Auth for streak tracking -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="auth.js"></script>
 </body>
 </html>

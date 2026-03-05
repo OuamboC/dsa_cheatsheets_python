@@ -1,14 +1,22 @@
 /**
  * Authentication Module for DSA Playground
  * Supports: Google, GitHub via Supabase Auth
- * Uses Supabase for auth + progress tracking
+ * Uses Supabase for auth + progress tracking + daily streaks
  */
 
 // Initialize Supabase
 let supabase = null;
 let currentUser = null;
+let supabaseInitialized = false;
 
 function initSupabase() {
+  console.log("Initializing Supabase...");
+
+  if (supabaseInitialized && supabase) {
+    console.log("Supabase already initialized");
+    return true;
+  }
+
   if (
     !window.supabaseConfig ||
     window.supabaseConfig.url === "YOUR_SUPABASE_URL"
@@ -19,11 +27,20 @@ function initSupabase() {
     return false;
   }
 
+  // Check if Supabase SDK is loaded
+  if (typeof window.supabase === "undefined") {
+    console.error("Supabase SDK not loaded!");
+    return false;
+  }
+
   try {
     supabase = window.supabase.createClient(
       window.supabaseConfig.url,
       window.supabaseConfig.anonKey,
     );
+
+    console.log("Supabase client created successfully");
+    supabaseInitialized = true;
 
     // Listen for auth state changes
     supabase.auth.onAuthStateChange(handleAuthStateChanged);
@@ -100,14 +117,30 @@ function updateAuthUI(user) {
 
 // Sign in with Google
 async function signInWithGoogle() {
+  console.log("signInWithGoogle called");
+
+  // Try to initialize if not already
   if (!supabase) {
-    alert("Supabase not configured. Please set up your Supabase project.");
+    initSupabase();
+  }
+
+  if (!supabase) {
+    console.error("Supabase is not initialized");
+    const errorEl = document.getElementById("auth-error");
+    if (errorEl) {
+      errorEl.textContent =
+        "Authentication service not available. Please refresh the page.";
+      errorEl.style.display = "block";
+    } else {
+      alert("Authentication service not available. Please refresh the page.");
+    }
     return;
   }
 
   showLoading(true);
 
   try {
+    console.log("Calling signInWithOAuth for Google...");
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -115,6 +148,7 @@ async function signInWithGoogle() {
       },
     });
 
+    console.log("OAuth response:", { data, error });
     if (error) throw error;
   } catch (error) {
     handleAuthError(error);
@@ -124,14 +158,30 @@ async function signInWithGoogle() {
 
 // Sign in with GitHub
 async function signInWithGitHub() {
+  console.log("signInWithGitHub called");
+
+  // Try to initialize if not already
   if (!supabase) {
-    alert("Supabase not configured. Please set up your Supabase project.");
+    initSupabase();
+  }
+
+  if (!supabase) {
+    console.error("Supabase is not initialized");
+    const errorEl = document.getElementById("auth-error");
+    if (errorEl) {
+      errorEl.textContent =
+        "Authentication service not available. Please refresh the page.";
+      errorEl.style.display = "block";
+    } else {
+      alert("Authentication service not available. Please refresh the page.");
+    }
     return;
   }
 
   showLoading(true);
 
   try {
+    console.log("Calling signInWithOAuth for GitHub...");
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
@@ -139,6 +189,7 @@ async function signInWithGitHub() {
       },
     });
 
+    console.log("OAuth response:", { data, error });
     if (error) throw error;
   } catch (error) {
     handleAuthError(error);
@@ -352,6 +403,202 @@ async function getAllProgress() {
   }
 }
 
+// ========== DAILY STREAK TRACKING ==========
+
+// Get today's date as a string (YYYY-MM-DD)
+function getTodayString() {
+  const today = new Date();
+  return today.toISOString().split("T")[0];
+}
+
+// Get yesterday's date as a string (YYYY-MM-DD)
+function getYesterdayString() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return yesterday.toISOString().split("T")[0];
+}
+
+// Load streak data from local storage
+function loadStreakLocal() {
+  const data = localStorage.getItem("dsa_streak_data");
+  return data
+    ? JSON.parse(data)
+    : { currentStreak: 0, lastPracticeDate: null, longestStreak: 0 };
+}
+
+// Save streak data to local storage
+function saveStreakLocal(streakData) {
+  localStorage.setItem("dsa_streak_data", JSON.stringify(streakData));
+}
+
+// Save streak to Supabase
+async function saveStreakCloud(streakData) {
+  if (!currentUser || !supabase) return false;
+
+  try {
+    const { error } = await supabase.from("user_progress").upsert(
+      {
+        user_id: currentUser.id,
+        playground_name: "daily_streak",
+        completed_items: streakData,
+        last_updated: new Date().toISOString(),
+      },
+      {
+        onConflict: "user_id,playground_name",
+      },
+    );
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error saving streak to cloud:", error);
+    return false;
+  }
+}
+
+// Load streak from Supabase
+async function loadStreakCloud() {
+  if (!currentUser || !supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from("user_progress")
+      .select("completed_items")
+      .eq("user_id", currentUser.id)
+      .eq("playground_name", "daily_streak")
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error;
+
+    return data ? data.completed_items : null;
+  } catch (error) {
+    console.error("Error loading streak from cloud:", error);
+    return null;
+  }
+}
+
+// Record practice for today (call this when user completes an exercise)
+async function recordPractice() {
+  const today = getTodayString();
+  const yesterday = getYesterdayString();
+
+  // Load current streak data
+  let streakData = loadStreakLocal();
+  const cloudStreak = await loadStreakCloud();
+
+  // Merge with cloud data if available
+  if (cloudStreak) {
+    if (
+      cloudStreak.currentStreak > streakData.currentStreak ||
+      cloudStreak.longestStreak > streakData.longestStreak
+    ) {
+      streakData = {
+        currentStreak: Math.max(
+          streakData.currentStreak,
+          cloudStreak.currentStreak,
+        ),
+        longestStreak: Math.max(
+          streakData.longestStreak,
+          cloudStreak.longestStreak,
+        ),
+        lastPracticeDate:
+          cloudStreak.lastPracticeDate || streakData.lastPracticeDate,
+      };
+    }
+  }
+
+  // Already practiced today
+  if (streakData.lastPracticeDate === today) {
+    return streakData;
+  }
+
+  // Check if streak continues or resets
+  if (streakData.lastPracticeDate === yesterday) {
+    // Continuing streak
+    streakData.currentStreak += 1;
+  } else if (streakData.lastPracticeDate !== today) {
+    // Streak broken - reset to 1
+    streakData.currentStreak = 1;
+  }
+
+  // Update longest streak if current is higher
+  if (streakData.currentStreak > streakData.longestStreak) {
+    streakData.longestStreak = streakData.currentStreak;
+  }
+
+  // Update last practice date
+  streakData.lastPracticeDate = today;
+
+  // Save locally and to cloud
+  saveStreakLocal(streakData);
+  await saveStreakCloud(streakData);
+
+  // Update UI if element exists
+  updateStreakUI(streakData);
+
+  console.log("Practice recorded! Current streak:", streakData.currentStreak);
+  return streakData;
+}
+
+// Get current streak data
+async function getStreakData() {
+  let streakData = loadStreakLocal();
+  const cloudStreak = await loadStreakCloud();
+
+  // Merge with cloud data
+  if (cloudStreak) {
+    streakData = {
+      currentStreak: Math.max(
+        streakData.currentStreak,
+        cloudStreak.currentStreak,
+      ),
+      longestStreak: Math.max(
+        streakData.longestStreak,
+        cloudStreak.longestStreak,
+      ),
+      lastPracticeDate:
+        cloudStreak.lastPracticeDate || streakData.lastPracticeDate,
+    };
+    saveStreakLocal(streakData);
+  }
+
+  // Check if streak is still valid (practiced yesterday or today)
+  const today = getTodayString();
+  const yesterday = getYesterdayString();
+
+  if (
+    streakData.lastPracticeDate !== today &&
+    streakData.lastPracticeDate !== yesterday
+  ) {
+    // Streak has been broken
+    streakData.currentStreak = 0;
+    saveStreakLocal(streakData);
+  }
+
+  return streakData;
+}
+
+// Update streak display in UI
+function updateStreakUI(streakData) {
+  const streakElements = document.querySelectorAll(".daily-streak-count");
+  streakElements.forEach((el) => {
+    el.textContent = streakData.currentStreak;
+  });
+
+  const longestStreakElements = document.querySelectorAll(
+    ".longest-streak-count",
+  );
+  longestStreakElements.forEach((el) => {
+    el.textContent = streakData.longestStreak;
+  });
+}
+
+// Check if user has practiced today
+function hasPracticedToday() {
+  const streakData = loadStreakLocal();
+  return streakData.lastPracticeDate === getTodayString();
+}
+
 // ========== INITIALIZATION ==========
 
 // Initialize auth on page load
@@ -371,9 +618,15 @@ window.authModule = {
   getAllProgress,
   getCurrentUser: () => currentUser,
   isAuthenticated: () => !!currentUser,
+  // Streak functions
+  recordPractice,
+  getStreakData,
+  hasPracticedToday,
 };
 
 // Make sign-in functions globally available
 window.signInWithGoogle = signInWithGoogle;
 window.signInWithGitHub = signInWithGitHub;
 window.signOutUser = signOutUser;
+window.recordPractice = recordPractice;
+window.getStreakData = getStreakData;

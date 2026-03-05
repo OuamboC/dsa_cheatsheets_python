@@ -407,11 +407,25 @@
         sessionStorage.setItem("returnUrl", returnUrl);
       }
 
-      // Check if already logged in
+      // Initialize Supabase and check auth
       document.addEventListener("DOMContentLoaded", () => {
-        if (window.authModule && window.authModule.isAuthenticated()) {
-          window.location.href = "index.html";
+        console.log("Login page loaded");
+
+        // Ensure Supabase is initialized
+        if (typeof initSupabase === "function") {
+          const initialized = initSupabase();
+          console.log("Supabase init result:", initialized);
+        } else {
+          console.error("initSupabase function not found!");
         }
+
+        // Check if already logged in
+        setTimeout(() => {
+          if (window.authModule && window.authModule.isAuthenticated()) {
+            console.log("User already authenticated, redirecting...");
+            window.location.href = "index.html";
+          }
+        }, 500);
       });
     </script>
   </body>

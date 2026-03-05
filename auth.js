@@ -889,6 +889,9 @@ function hideAuthGate() {
 async function requireAuth() {
   console.log("requireAuth called");
   
+  // Small delay to let Supabase SDK initialize and load session from storage
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
   // Get or create Supabase client
   const client = getSupabaseClient();
   
@@ -898,32 +901,47 @@ async function requireAuth() {
     return;
   }
   
-  try {
-    // Directly check session with Supabase
-    console.log("Checking session with Supabase...");
-    const { data: { session }, error } = await client.auth.getSession();
-    
-    if (error) {
-      console.error("Session check error:", error);
-      showAuthGate();
-      return;
+  // Try multiple times with increasing delays
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`Session check attempt ${attempt}...`);
+      const { data: { session }, error } = await client.auth.getSession();
+      
+      if (error) {
+        console.error("Session check error:", error);
+        if (attempt === 3) {
+          showAuthGate();
+          return;
+        }
+        await new Promise(resolve => setTimeout(resolve, 300 * attempt));
+        continue;
+      }
+      
+      if (session && session.user) {
+        console.log("User is authenticated:", session.user.email);
+        currentUser = session.user;
+        hideAuthGate();
+        injectAuthHeader(currentUser);
+        return;
+      }
+      
+      // No session on this attempt
+      if (attempt < 3) {
+        await new Promise(resolve => setTimeout(resolve, 300 * attempt));
+      }
+    } catch (e) {
+      console.error("requireAuth error:", e);
+      if (attempt === 3) {
+        showAuthGate();
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, 300 * attempt));
     }
-    
-    if (session && session.user) {
-      console.log("User is authenticated:", session.user.email);
-      currentUser = session.user;
-      hideAuthGate();
-      injectAuthHeader(currentUser);
-      return;
-    }
-    
-    // No session found
-    console.log("No session found, showing auth gate");
-    showAuthGate();
-  } catch (e) {
-    console.error("requireAuth error:", e);
-    showAuthGate();
   }
+  
+  // No session found after all attempts
+  console.log("No session found after all attempts, showing auth gate");
+  showAuthGate();
 }
 
 // ========== INITIALIZATION ==========

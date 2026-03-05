@@ -86,10 +86,10 @@ function handleAuthStateChanged(event, session) {
     loadUserProgress();
     hideAuthGate(); // Remove auth gate on sign-in
     
-    // If on login page, redirect to stored URL or index
-    if (window.location.pathname.includes("login")) {
-      const storedReturn = sessionStorage.getItem("returnUrl");
-      let redirectTo = storedReturn || "index.html";
+    // Check if there's a stored return URL to redirect to
+    const storedReturn = sessionStorage.getItem("returnUrl");
+    if (storedReturn) {
+      let redirectTo = storedReturn;
       
       // Convert full URL to relative path if needed
       if (redirectTo.includes(window.location.origin)) {
@@ -99,9 +99,14 @@ function handleAuthStateChanged(event, session) {
         redirectTo = redirectTo.substring(1);
       }
       
-      console.log("Redirecting from login to:", redirectTo);
-      sessionStorage.removeItem("returnUrl");
-      window.location.href = redirectTo;
+      // Only redirect if we're not already on that page
+      if (!window.location.href.includes(redirectTo.split('?')[0])) {
+        console.log("Redirecting to stored URL:", redirectTo);
+        sessionStorage.removeItem("returnUrl");
+        window.location.href = redirectTo;
+      } else {
+        sessionStorage.removeItem("returnUrl");
+      }
     }
   } else if (event === "SIGNED_OUT") {
     currentUser = null;
@@ -153,6 +158,12 @@ function updateAuthUI(user) {
 async function signInWithGoogle() {
   console.log("signInWithGoogle called");
 
+  // Store current page to return to after auth (if not on login page)
+  const currentPage = window.location.pathname;
+  if (!currentPage.includes('login')) {
+    sessionStorage.setItem('returnUrl', window.location.href);
+  }
+
   // Try to initialize if not already
   if (!supabaseClient) {
     initSupabase();
@@ -175,10 +186,11 @@ async function signInWithGoogle() {
 
   try {
     console.log("Calling signInWithOAuth for Google...");
+    // Redirect to origin root - Supabase will add hash params
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin + "/login.html",
+        redirectTo: window.location.origin,
       },
     });
 
@@ -193,6 +205,12 @@ async function signInWithGoogle() {
 // Sign in with GitHub
 async function signInWithGitHub() {
   console.log("signInWithGitHub called");
+
+  // Store current page to return to after auth (if not on login page)
+  const currentPage = window.location.pathname;
+  if (!currentPage.includes('login')) {
+    sessionStorage.setItem('returnUrl', window.location.href);
+  }
 
   // Try to initialize if not already
   if (!supabaseClient) {
@@ -216,10 +234,11 @@ async function signInWithGitHub() {
 
   try {
     console.log("Calling signInWithOAuth for GitHub...");
+    // Redirect to origin root - Supabase will add hash params
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: window.location.origin + "/login.html",
+        redirectTo: window.location.origin,
       },
     });
 

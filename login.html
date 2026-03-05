@@ -417,60 +417,83 @@
         sessionStorage.setItem("returnUrl", returnUrl);
       }
 
-      // Function to redirect after auth
-      async function handleAuthRedirect() {
-        console.log("Checking auth status...");
+      // Redirect to stored URL or index
+      function doRedirect() {
+        const storedReturn = sessionStorage.getItem("returnUrl");
+        let redirectTo = storedReturn || "index.html";
 
-        // Wait for auth module to be ready
-        if (!window.authModule || !window.authModule.getSessionAsync) {
-          console.log("Waiting for auth module...");
-          setTimeout(handleAuthRedirect, 200);
-          return;
+        // Convert full URL to relative path if needed
+        if (redirectTo.includes(window.location.origin)) {
+          redirectTo = redirectTo.replace(window.location.origin, "");
+        }
+        // Ensure it's relative
+        if (redirectTo.startsWith("/")) {
+          redirectTo = redirectTo.substring(1);
         }
 
-        try {
-          // Use async session check from auth.js
-          const session = await window.authModule.getSessionAsync();
-          
-          if (session && session.user) {
-            console.log("User authenticated:", session.user.email);
-            const storedReturn = sessionStorage.getItem("returnUrl");
-            let redirectTo = storedReturn || "index.html";
-
-            // Convert full URL to relative path if needed
-            if (redirectTo.includes(window.location.origin)) {
-              redirectTo = redirectTo.replace(window.location.origin, "");
-            }
-            // Ensure it starts with / or is relative
-            if (redirectTo.startsWith("/")) {
-              redirectTo = redirectTo.substring(1);
-            }
-
-            console.log("Redirecting to:", redirectTo);
-            sessionStorage.removeItem("returnUrl");
-            window.location.href = redirectTo;
-          } else {
-            console.log("No session found, staying on login page");
-          }
-        } catch (e) {
-          console.error("Auth check error:", e);
-        }
+        console.log("Redirecting to:", redirectTo);
+        sessionStorage.removeItem("returnUrl");
+        window.location.href = redirectTo;
       }
 
+      // Check if this is an OAuth callback (has hash with access_token)
+      const isOAuthCallback = window.location.hash && 
+        (window.location.hash.includes("access_token") || window.location.hash.includes("error"));
+
       // Initialize Supabase and check auth
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
         console.log("Login page loaded");
+        console.log("Is OAuth callback:", isOAuthCallback);
 
         // Ensure Supabase is initialized
         if (typeof initSupabase === "function") {
           const initialized = initSupabase();
           console.log("Supabase init result:", initialized);
-        } else {
-          console.error("initSupabase function not found!");
         }
 
-        // Check auth after a delay to allow OAuth callback session to establish
-        setTimeout(handleAuthRedirect, 1000);
+        // Wait for Supabase SDK to process OAuth callback hash
+        if (isOAuthCallback) {
+          console.log("Processing OAuth callback...");
+          
+          // Supabase auto-processes the hash, we need to wait for it
+          // Poll for session with retries
+          let attempts = 0;
+          const maxAttempts = 20;
+          
+          const checkSession = async () => {
+            attempts++;
+            console.log(`Session check attempt ${attempts}...`);
+            
+            if (window.authModule && window.authModule.getSessionAsync) {
+              const session = await window.authModule.getSessionAsync();
+              if (session && session.user) {
+                console.log("Session established:", session.user.email);
+                doRedirect();
+                return;
+              }
+            }
+            
+            if (attempts < maxAttempts) {
+              setTimeout(checkSession, 300);
+            } else {
+              console.log("Max attempts reached, no session found");
+            }
+          };
+          
+          // Start checking after a brief delay
+          setTimeout(checkSession, 500);
+        } else {
+          // Regular page load - check if already logged in
+          setTimeout(async () => {
+            if (window.authModule && window.authModule.getSessionAsync) {
+              const session = await window.authModule.getSessionAsync();
+              if (session && session.user) {
+                console.log("Already logged in:", session.user.email);
+                doRedirect();
+              }
+            }
+          }, 500);
+        }
       });
     </script>
   </body>

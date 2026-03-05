@@ -874,6 +874,20 @@ window.authModule = {
   getAllProgress,
   getCurrentUser: () => currentUser,
   isAuthenticated: () => !!currentUser,
+  // Async session check - returns promise with session
+  getSessionAsync: async () => {
+    if (!supabaseClient) return null;
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+      }
+      return session;
+    } catch (e) {
+      console.error("getSessionAsync error:", e);
+      return null;
+    }
+  },
   // Streak functions
   recordPractice,
   getStreakData,

@@ -421,24 +421,17 @@
       async function handleAuthRedirect() {
         console.log("Checking auth status...");
 
-        // Wait for Supabase to be ready
-        if (!window.supabase) {
-          console.log("Waiting for Supabase...");
+        // Wait for auth module to be ready
+        if (!window.authModule || !window.authModule.getSessionAsync) {
+          console.log("Waiting for auth module...");
           setTimeout(handleAuthRedirect, 200);
           return;
         }
 
         try {
-          // Create client if needed
-          const client = window.supabase.createClient(
-            window.supabaseConfig.url,
-            window.supabaseConfig.anonKey,
-          );
-
-          const {
-            data: { session },
-          } = await client.auth.getSession();
-
+          // Use async session check from auth.js
+          const session = await window.authModule.getSessionAsync();
+          
           if (session && session.user) {
             console.log("User authenticated:", session.user.email);
             const storedReturn = sessionStorage.getItem("returnUrl");
@@ -447,6 +440,10 @@
             // Convert full URL to relative path if needed
             if (redirectTo.includes(window.location.origin)) {
               redirectTo = redirectTo.replace(window.location.origin, "");
+            }
+            // Ensure it starts with / or is relative
+            if (redirectTo.startsWith("/")) {
+              redirectTo = redirectTo.substring(1);
             }
 
             console.log("Redirecting to:", redirectTo);
@@ -472,8 +469,8 @@
           console.error("initSupabase function not found!");
         }
 
-        // Check auth after a short delay to allow session to establish
-        setTimeout(handleAuthRedirect, 800);
+        // Check auth after a delay to allow OAuth callback session to establish
+        setTimeout(handleAuthRedirect, 1000);
       });
     </script>
   </body>

@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In - Python DSA Playground</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #080810;
+        --surface: #0f0f1a;
+        --card: #13131f;
+        --border: #1e1e32;
+        --text: #e8e8f4;
+        --muted: #5a5a7a;
+        --dim: #2a2a42;
+        --accent: #7c6af7;
+        --accent2: #f76a8c;
+        --accent3: #6af7c0;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Syne", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .bg-grid {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background-image:
+          linear-gradient(var(--border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--border) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: radial-gradient(
+          ellipse 100% 100% at 50% 50%,
+          black 30%,
+          transparent 100%
+        );
+      }
+
+      .orb {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(130px);
+        opacity: 0.12;
+        z-index: 0;
+        pointer-events: none;
+        animation: drift 14s ease-in-out infinite alternate;
+      }
+      .orb-1 {
+        width: 600px;
+        height: 600px;
+        background: #7c6af7;
+        top: -200px;
+        left: -100px;
+      }
+      .orb-2 {
+        width: 400px;
+        height: 400px;
+        background: #f76a8c;
+        bottom: -100px;
+        right: -50px;
+        animation-delay: -5s;
+      }
+
+      @keyframes drift {
+        from {
+          transform: translate(0, 0) scale(1);
+        }
+        to {
+          transform: translate(30px, 20px) scale(1.05);
+        }
+      }
+
+      .login-container {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 420px;
+        padding: 2rem;
+      }
+
+      .login-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 2.5rem;
+        text-align: center;
+      }
+
+      .logo {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--muted);
+        margin-bottom: 2rem;
+      }
+
+      .logo span {
+        color: var(--accent);
+      }
+
+      .login-card h1 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(120deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .login-card p {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-bottom: 2rem;
+        line-height: 1.7;
+      }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin: 1.5rem 0;
+      }
+
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      .divider span {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      .auth-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+
+      .btn-auth {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem;
+        width: 100%;
+        padding: 0.9rem 1.2rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+      }
+
+      .btn-auth:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      }
+
+      .btn-auth svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .btn-google {
+        border-color: rgba(234, 67, 53, 0.3);
+        background: rgba(234, 67, 53, 0.08);
+      }
+      .btn-google:hover {
+        border-color: #ea4335;
+        background: rgba(234, 67, 53, 0.15);
+      }
+
+      .btn-github {
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .btn-github:hover {
+        border-color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .error-message {
+        display: none;
+        background: rgba(247, 106, 140, 0.1);
+        border: 1px solid rgba(247, 106, 140, 0.3);
+        color: var(--accent2);
+        padding: 0.8rem 1rem;
+        border-radius: 6px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.78rem;
+        margin-top: 1rem;
+        text-align: left;
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+        color: var(--muted);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.78rem;
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      .back-link:hover {
+        color: var(--text);
+      }
+
+      .features {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+      }
+
+      .features-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 1rem;
+      }
+
+      .feature-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        text-align: left;
+      }
+
+      .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+
+      .feature-icon {
+        color: var(--accent3);
+        font-size: 0.9rem;
+      }
+
+      .loading {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        color: var(--muted);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.82rem;
+      }
+
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 480px) {
+        .login-card {
+          padding: 1.5rem;
+        }
+        .login-card h1 {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="login-container">
+      <div class="login-card">
+        <div class="logo"><span>//</span> python-dsa-playground</div>
+
+        <h1>Sign In</h1>
+        <p>
+          Track your progress across devices and never lose your hard-earned
+          streaks.
+        </p>
+
+        <div class="auth-buttons" id="auth-buttons">
+          <button class="btn-auth btn-google" onclick="signInWithGoogle()">
+            <svg viewBox="0 0 24 24">
+              <path
+                fill="#EA4335"
+                d="M5.26620003,9.76452941 C6.19878754,6.93863203 8.85444915,4.90909091 12,4.90909091 C13.6909091,4.90909091 15.2181818,5.50909091 16.4181818,6.49090909 L19.9090909,3 C17.7818182,1.14545455 15.0545455,0 12,0 C7.27006974,0 3.1977497,2.69829785 1.23999023,6.65002441 L5.26620003,9.76452941 Z"
+              />
+              <path
+                fill="#34A853"
+                d="M16.0407269,18.0125889 C14.9509167,18.7163016 13.5660892,19.0909091 12,19.0909091 C8.86648613,19.0909091 6.21911939,17.076871 5.27698177,14.2678769 L1.23746264,17.3349879 C3.19279051,21.2936293 7.26500293,24 12,24 C14.9328362,24 17.7353462,22.9573905 19.834192,20.9995801 L16.0407269,18.0125889 Z"
+              />
+              <path
+                fill="#4A90E2"
+                d="M19.834192,20.9995801 C22.0291676,18.9520994 23.4545455,15.903663 23.4545455,12 C23.4545455,11.2909091 23.3454545,10.5272727 23.1818182,9.81818182 L12,9.81818182 L12,14.4545455 L18.4363636,14.4545455 C18.1187732,16.013626 17.2662994,17.2212117 16.0407269,18.0125889 L19.834192,20.9995801 Z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.27698177,14.2678769 C5.03832634,13.556323 4.90909091,12.7937589 4.90909091,12 C4.90909091,11.2182781 5.03443647,10.4668121 5.26620003,9.76452941 L1.23999023,6.65002441 C0.43658717,8.26043162 0,10.0753848 0,12 C0,13.9195484 0.444780743,15.7## 1.23746264,17.3349879 L5.27698177,14.2678769 Z"
+              />
+            </svg>
+            Continue with Google
+          </button>
+
+          <button class="btn-auth btn-github" onclick="signInWithGitHub()">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              />
+            </svg>
+            Continue with GitHub
+          </button>
+        </div>
+
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <span>Signing in...</span>
+        </div>
+
+        <div class="error-message" id="auth-error"></div>
+
+        <div class="features">
+          <div class="features-title">Why sign in?</div>
+          <div class="feature-list">
+            <div class="feature-item">
+              <span class="feature-icon">✓</span>
+              <span>Sync progress across all your devices</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">✓</span>
+              <span>Keep track of solved exercises</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">✓</span>
+              <span>Compete on the leaderboard</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">✓</span>
+              <span>Resume where you left off</span>
+            </div>
+          </div>
+        </div>
+
+        <a href="index.html" class="back-link"> ← Back to playground </a>
+      </div>
+    </div>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Supabase Config -->
+    <script src="supabase-config.js"></script>
+    <script src="auth.js"></script>
+
+    <script>
+      // Store return URL for after login
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnUrl = urlParams.get("return") || document.referrer;
+      if (returnUrl && !returnUrl.includes("login.html")) {
+        sessionStorage.setItem("returnUrl", returnUrl);
+      }
+
+      // Check if already logged in
+      document.addEventListener("DOMContentLoaded", () => {
+        if (window.authModule && window.authModule.isAuthenticated()) {
+          window.location.href = "index.html";
+        }
+      });
+    </script>
+  </body>
+</html>

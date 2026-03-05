@@ -856,17 +856,16 @@ function hideAuthGate() {
 
 // Require authentication for playground pages
 function requireAuth() {
-  // Show gate immediately while checking auth
-  showAuthGate();
-
-  // Check if already authenticated
-  if (currentUser) {
-    hideAuthGate();
-    return;
-  }
-
-  // Wait for auth state from Supabase
+  // Wait for auth state from Supabase first, don't show gate immediately
   const checkAuth = async () => {
+    // Check if already authenticated from memory
+    if (currentUser) {
+      console.log("User already in memory:", currentUser.email);
+      hideAuthGate();
+      injectAuthHeader(currentUser);
+      return;
+    }
+
     if (!supabaseClient) {
       // Try to initialize
       initSupabase();
@@ -876,12 +875,15 @@ function requireAuth() {
 
     if (supabaseClient) {
       try {
+        console.log("Checking session for requireAuth...");
         const {
           data: { session },
         } = await supabaseClient.auth.getSession();
         if (session && session.user) {
+          console.log("Session found:", session.user.email);
           currentUser = session.user;
           hideAuthGate();
+          injectAuthHeader(currentUser);
           return;
         }
       } catch (e) {
@@ -889,7 +891,9 @@ function requireAuth() {
       }
     }
 
-    // No session found, keep gate visible
+    // No session found, show gate
+    console.log("No session found, showing auth gate");
+    showAuthGate();
   };
 
   checkAuth();

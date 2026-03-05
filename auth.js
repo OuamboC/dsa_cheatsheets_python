@@ -8,8 +8,31 @@
 let supabaseClient = null;
 let currentUser = null;
 let supabaseInitialized = false;
-let sessionCheckComplete = false;
-let sessionCheckPromise = null;
+
+// Create Supabase client immediately when config is available
+function getSupabaseClient() {
+  if (supabaseClient) return supabaseClient;
+  
+  if (!window.supabaseConfig || window.supabaseConfig.url === "YOUR_SUPABASE_URL") {
+    return null;
+  }
+  
+  if (typeof window.supabase === "undefined") {
+    return null;
+  }
+  
+  try {
+    supabaseClient = window.supabase.createClient(
+      window.supabaseConfig.url,
+      window.supabaseConfig.anonKey
+    );
+    supabaseClient.auth.onAuthStateChange(handleAuthStateChanged);
+    return supabaseClient;
+  } catch (e) {
+    console.error("Failed to create Supabase client:", e);
+    return null;
+  }
+}
 
 function initSupabase() {
   console.log("Initializing Supabase...");
@@ -47,8 +70,8 @@ function initSupabase() {
     // Listen for auth state changes
     supabaseClient.auth.onAuthStateChange(handleAuthStateChanged);
 
-    // Check initial session and store promise
-    sessionCheckPromise = checkSession();
+    // Check initial session
+    checkSession();
     return true;
   } catch (e) {
     console.error("Supabase init error:", e);
@@ -59,7 +82,6 @@ function initSupabase() {
 // Check for existing session
 async function checkSession() {
   if (!supabaseClient) {
-    sessionCheckComplete = true;
     return;
   }
 
@@ -80,8 +102,6 @@ async function checkSession() {
     }
   } catch (e) {
     console.error("Session check error:", e);
-  } finally {
-    sessionCheckComplete = true;
   }
 }
 
@@ -866,61 +886,44 @@ function hideAuthGate() {
 }
 
 // Require authentication for playground pages
-function requireAuth() {
-  // Check auth with retries
-  const checkAuth = async () => {
-    console.log("requireAuth checking...");
+async function requireAuth() {
+  console.log("requireAuth called");
+  
+  // Get or create Supabase client
+  const client = getSupabaseClient();
+  
+  if (!client) {
+    console.error("Supabase client not available");
+    showAuthGate();
+    return;
+  }
+  
+  try {
+    // Directly check session with Supabase
+    console.log("Checking session with Supabase...");
+    const { data: { session }, error } = await client.auth.getSession();
     
-    // Initialize Supabase if not already
-    if (!supabaseClient) {
-      initSupabase();
+    if (error) {
+      console.error("Session check error:", error);
+      showAuthGate();
+      return;
     }
     
-    // Wait for the initial session check to complete
-    if (sessionCheckPromise) {
-      console.log("Waiting for session check promise...");
-      await sessionCheckPromise;
-    }
-    
-    // Also wait a bit if session check isn't complete yet
-    let waitAttempts = 0;
-    while (!sessionCheckComplete && waitAttempts < 20) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      waitAttempts++;
-    }
-    
-    console.log("Session check complete, currentUser:", currentUser?.email || "null");
-    
-    // Check if authenticated
-    if (currentUser) {
-      console.log("User authenticated:", currentUser.email);
+    if (session && session.user) {
+      console.log("User is authenticated:", session.user.email);
+      currentUser = session.user;
       hideAuthGate();
       injectAuthHeader(currentUser);
       return;
     }
     
-    // Double-check with Supabase directly
-    if (supabaseClient) {
-      try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session && session.user) {
-          console.log("Session found on second check:", session.user.email);
-          currentUser = session.user;
-          hideAuthGate();
-          injectAuthHeader(currentUser);
-          return;
-        }
-      } catch (e) {
-        console.error("Auth check error:", e);
-      }
-    }
-
-    // No session found, show gate
+    // No session found
     console.log("No session found, showing auth gate");
     showAuthGate();
-  };
-
-  checkAuth();
+  } catch (e) {
+    console.error("requireAuth error:", e);
+    showAuthGate();
+  }
 }
 
 // ========== INITIALIZATION ==========

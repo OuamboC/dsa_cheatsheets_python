@@ -28,6 +28,14 @@ function getSupabaseClient() {
     supabaseClient = window.supabase.createClient(
       window.supabaseConfig.url,
       window.supabaseConfig.anonKey,
+      {
+        auth: {
+          detectSessionInUrl: true,
+          flowType: "implicit",
+          autoRefreshToken: true,
+          persistSession: true,
+        },
+      },
     );
     supabaseClient.auth.onAuthStateChange(handleAuthStateChanged);
     return supabaseClient;
@@ -65,6 +73,14 @@ function initSupabase() {
     supabaseClient = window.supabase.createClient(
       window.supabaseConfig.url,
       window.supabaseConfig.anonKey,
+      {
+        auth: {
+          detectSessionInUrl: true,
+          flowType: "implicit",
+          autoRefreshToken: true,
+          persistSession: true,
+        },
+      },
     );
 
     console.log("Supabase client created successfully");
@@ -362,12 +378,12 @@ async function saveProgressCloud(progress) {
     const { error } = await supabaseClient.from("user_progress").upsert(
       {
         user_id: currentUser.id,
-        page_key: key,
-        progress_data: progress,
-        updated_at: new Date().toISOString(),
+        playground_name: key,
+        completed_items: progress,
+        last_updated: new Date().toISOString(),
       },
       {
-        onConflict: "user_id,page_key",
+        onConflict: "user_id,playground_name",
       },
     );
 
@@ -389,15 +405,15 @@ async function loadUserProgress() {
     const key = getProgressKey();
     const { data, error } = await supabaseClient
       .from("user_progress")
-      .select("progress_data")
+      .select("completed_items")
       .eq("user_id", currentUser.id)
-      .eq("page_key", key)
+      .eq("playground_name", key)
       .single();
 
     if (error && error.code !== "PGRST116") throw error; // PGRST116 = no rows
 
-    if (data && data.progress_data) {
-      const cloudProgress = data.progress_data;
+    if (data && data.completed_items) {
+      const cloudProgress = data.completed_items;
       const localProgress = loadProgressLocal();
 
       if (localProgress) {
@@ -473,14 +489,14 @@ async function getAllProgress() {
   try {
     const { data, error } = await supabaseClient
       .from("user_progress")
-      .select("page_key, progress_data")
+      .select("playground_name, completed_items")
       .eq("user_id", currentUser.id);
 
     if (error) throw error;
 
     const progress = {};
     data.forEach((row) => {
-      progress[row.page_key] = row.progress_data;
+      progress[row.playground_name] = row.completed_items;
     });
 
     return progress;

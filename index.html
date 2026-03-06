@@ -791,30 +791,30 @@
     <!-- Initialize auth and update UI -->
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
-        // Initialize Supabase and check session
-        if (typeof initSupabase === "function") {
-          initSupabase();
-        }
-
-        // Hide progress banner if user is signed in
         const banner = document.getElementById("progress-banner");
-        if (banner && typeof getSupabaseClient === "function") {
+        
+        // Wait a moment for Supabase SDK to be ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        if (typeof getSupabaseClient === "function") {
           try {
             const client = getSupabaseClient();
             if (client) {
-              const {
-                data: { session },
-              } = await client.auth.getSession();
+              const { data: { session } } = await client.auth.getSession();
               if (session) {
-                banner.classList.add("hidden");
-                // Also update the auth UI in nav
+                console.log("Index: User is signed in:", session.user.email);
+                // Hide progress banner
+                if (banner) banner.classList.add("hidden");
+                // Update nav UI with user info and logout button
                 if (typeof updateAuthUI === "function") {
                   updateAuthUI(session.user);
                 }
+              } else {
+                console.log("Index: No session found");
               }
             }
           } catch (e) {
-            // Keep banner visible if check fails
+            console.error("Index: Auth check failed", e);
           }
         }
       });

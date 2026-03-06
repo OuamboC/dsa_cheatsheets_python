@@ -191,6 +191,42 @@
         color: var(--accent2);
       }
 
+      .progress-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.82rem;
+        color: var(--muted);
+        background: rgba(124, 106, 247, 0.06);
+        border: 1px solid rgba(124, 106, 247, 0.15);
+        padding: 0.8rem 1.2rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        animation: fadeUp 0.6s 0.4s ease both;
+      }
+      .progress-banner.hidden {
+        display: none;
+      }
+      .progress-icon {
+        font-size: 1rem;
+      }
+      .progress-link {
+        color: #7c6af7;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s;
+      }
+      .progress-link:hover {
+        color: #a89af7;
+        text-decoration: underline;
+      }
+      .progress-muted {
+        color: var(--dim);
+      }
+
       .hero {
         padding: 5rem 0 3.5rem;
         text-align: center;
@@ -573,6 +609,12 @@
             ><span class="stat-l">Install needed</span>
           </div>
         </div>
+        <div id="progress-banner" class="progress-banner">
+          <span class="progress-icon">📊</span>
+          <span>Want to track your progress and streaks?</span>
+          <a href="login.html" class="progress-link">Sign in</a>
+          <span class="progress-muted">with GitHub or Google</span>
+        </div>
       </section>
 
       <div class="section-label">Available now</div>
@@ -745,5 +787,23 @@
     <!-- Auth Module -->
     <script src="supabase-config.js"></script>
     <script src="auth.js"></script>
+
+    <!-- Hide progress banner if user is signed in -->
+    <script>
+      document.addEventListener('DOMContentLoaded', async () => {
+        const banner = document.getElementById('progress-banner');
+        if (banner && typeof getSupabaseClient === 'function') {
+          try {
+            const client = getSupabaseClient();
+            const { data: { session } } = await client.auth.getSession();
+            if (session) {
+              banner.classList.add('hidden');
+            }
+          } catch (e) {
+            // Keep banner visible if check fails
+          }
+        }
+      });
+    </script>
   </body>
 </html>

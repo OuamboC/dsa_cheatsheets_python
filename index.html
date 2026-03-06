@@ -793,21 +793,54 @@
       document.addEventListener("DOMContentLoaded", async () => {
         const banner = document.getElementById("progress-banner");
 
+        // Check if this is an OAuth callback (has hash with access_token)
+        const hashParams = new URLSearchParams(
+          window.location.hash.substring(1),
+        );
+        const isOAuthCallback = hashParams.has("access_token");
+
+        if (isOAuthCallback) {
+          console.log("Index: OAuth callback detected");
+        }
+
         // Wait a moment for Supabase SDK to be ready
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 150));
+
+        // Initialize Supabase (sets up auth state listener)
+        if (typeof initSupabase === "function") {
+          initSupabase();
+        }
 
         if (typeof getSupabaseClient === "function") {
           try {
             const client = getSupabaseClient();
             if (client) {
+              // Listen for auth state changes (handles OAuth callback)
+              client.auth.onAuthStateChange((event, session) => {
+                console.log("Index: Auth state changed:", event);
+                if (event === "SIGNED_IN" && session) {
+                  console.log("Index: User signed in:", session.user.email);
+                  if (banner) banner.classList.add("hidden");
+                  if (typeof updateAuthUI === "function") {
+                    updateAuthUI(session.user);
+                  }
+                  // Clean up the hash from URL
+                  if (window.location.hash) {
+                    history.replaceState(null, "", window.location.pathname);
+                  }
+                }
+              });
+
+              // Also check current session
               const {
                 data: { session },
               } = await client.auth.getSession();
               if (session) {
-                console.log("Index: User is signed in:", session.user.email);
-                // Hide progress banner
+                console.log(
+                  "Index: Existing session found:",
+                  session.user.email,
+                );
                 if (banner) banner.classList.add("hidden");
-                // Update nav UI with user info and logout button
                 if (typeof updateAuthUI === "function") {
                   updateAuthUI(session.user);
                 }

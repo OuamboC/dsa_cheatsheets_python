@@ -220,11 +220,11 @@ async function signInWithGoogle() {
 
   try {
     console.log("Calling signInWithOAuth for Google...");
-    // Redirect to login.html to handle the OAuth callback
+    // Redirect to root - must match Supabase allowed redirect URLs
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin + "/login.html",
+        redirectTo: window.location.origin + "/",
       },
     });
 
@@ -268,11 +268,11 @@ async function signInWithGitHub() {
 
   try {
     console.log("Calling signInWithOAuth for GitHub...");
-    // Redirect to login.html to handle the OAuth callback
+    // Redirect to root - must match Supabase allowed redirect URLs
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: window.location.origin + "/login.html",
+        redirectTo: window.location.origin + "/",
       },
     });
 

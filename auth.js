@@ -178,7 +178,7 @@ function updateAuthUI(user) {
       <div class="user-info">
         <img class="user-avatar" src="${avatar}" alt="avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%228%22 r=%224%22 fill=%22%237c6af7%22/><path d=%22M4 20c0-4 4-6 8-6s8 2 8 6%22 fill=%22%237c6af7%22/></svg>'">
         <span class="user-name">${name}</span>
-        <button class="btn-logout" onclick="signOutUser()">Sign Out</button>
+        <a href="logout.html" class="btn-logout">Sign Out</a>
       </div>
     `;
   } else {
@@ -846,7 +846,7 @@ function injectAuthHeader(user) {
   header.innerHTML = `
     <img class="user-avatar" src="${avatar}" alt="avatar" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%228%22 r=%224%22 fill=%22%237c6af7%22/><path d=%22M4 20c0-4 4-6 8-6s8 2 8 6%22 fill=%22%237c6af7%22/></svg>'">
     <span class="user-name">${name}</span>
-    <button class="btn-logout" onclick="signOutUser()">Log Out</button>
+    <a href="logout.html" class="btn-logout">Log Out</a>
   `;
   document.body.appendChild(header);
 }

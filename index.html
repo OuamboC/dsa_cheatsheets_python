@@ -792,15 +792,17 @@
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
         const banner = document.getElementById("progress-banner");
-        
+
         // Wait a moment for Supabase SDK to be ready
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         if (typeof getSupabaseClient === "function") {
           try {
             const client = getSupabaseClient();
             if (client) {
-              const { data: { session } } = await client.auth.getSession();
+              const {
+                data: { session },
+              } = await client.auth.getSession();
               if (session) {
                 console.log("Index: User is signed in:", session.user.email);
                 // Hide progress banner

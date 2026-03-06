@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Signing Out... | Python DSA Playground</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #080810;
+        --surface: #0f0f1a;
+        --card: #13131f;
+        --border: #1e1e32;
+        --text: #e8e8f4;
+        --muted: #5a5a7a;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Syne", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .logout-container {
+        text-align: center;
+        padding: 3rem;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        max-width: 400px;
+      }
+
+      .logout-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+      }
+
+      p {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 1.5rem;
+      }
+
+      .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--border);
+        border-top-color: #7c6af7;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .success-message {
+        display: none;
+        color: #6af7c0;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.85rem;
+      }
+
+      .home-link {
+        display: inline-block;
+        margin-top: 1.5rem;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.8rem;
+        color: #7c6af7;
+        text-decoration: none;
+        border: 1px solid #7c6af7;
+        padding: 0.5rem 1.2rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+      }
+
+      .home-link:hover {
+        background: rgba(124, 106, 247, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="logout-container">
+      <div class="logout-icon">👋</div>
+      <h1>Signing you out...</h1>
+      <p id="status-text">Please wait a moment</p>
+      <div class="spinner" id="spinner"></div>
+      <p class="success-message" id="success-message">
+        You've been signed out successfully!
+      </p>
+      <a
+        href="index.html"
+        class="home-link"
+        id="home-link"
+        style="display: none"
+        >Back to Home</a
+      >
+    </div>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+
+    <script>
+      async function performLogout() {
+        const spinner = document.getElementById("spinner");
+        const statusText = document.getElementById("status-text");
+        const successMessage = document.getElementById("success-message");
+        const homeLink = document.getElementById("home-link");
+
+        try {
+          // Create Supabase client
+          if (window.supabaseConfig && window.supabase) {
+            const client = window.supabase.createClient(
+              window.supabaseConfig.url,
+              window.supabaseConfig.anonKey,
+            );
+
+            // Sign out
+            await client.auth.signOut();
+          }
+
+          // Clear any local storage items
+          localStorage.removeItem("supabase.auth.token");
+          sessionStorage.removeItem("returnUrl");
+
+          // Show success
+          spinner.style.display = "none";
+          statusText.style.display = "none";
+          successMessage.style.display = "block";
+          homeLink.style.display = "inline-block";
+
+          // Auto redirect after 2 seconds
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 2000);
+        } catch (error) {
+          console.error("Logout error:", error);
+          spinner.style.display = "none";
+          statusText.textContent = "Error signing out. Please try again.";
+          homeLink.style.display = "inline-block";
+        }
+      }
+
+      // Run logout on page load
+      performLogout();
+    </script>
+  </body>
+</html>

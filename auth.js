@@ -220,11 +220,11 @@ async function signInWithGoogle() {
 
   try {
     console.log("Calling signInWithOAuth for Google...");
-    // Redirect to origin root - Supabase will add hash params
+    // Redirect to login.html to handle the OAuth callback
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: window.location.origin + "/login.html",
       },
     });
 
@@ -268,11 +268,11 @@ async function signInWithGitHub() {
 
   try {
     console.log("Calling signInWithOAuth for GitHub...");
-    // Redirect to origin root - Supabase will add hash params
+    // Redirect to login.html to handle the OAuth callback
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: window.location.origin + "/login.html",
       },
     });
 

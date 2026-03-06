@@ -788,16 +788,30 @@
     <script src="supabase-config.js"></script>
     <script src="auth.js"></script>
 
-    <!-- Hide progress banner if user is signed in -->
+    <!-- Initialize auth and update UI -->
     <script>
-      document.addEventListener('DOMContentLoaded', async () => {
-        const banner = document.getElementById('progress-banner');
-        if (banner && typeof getSupabaseClient === 'function') {
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Initialize Supabase and check session
+        if (typeof initSupabase === "function") {
+          initSupabase();
+        }
+
+        // Hide progress banner if user is signed in
+        const banner = document.getElementById("progress-banner");
+        if (banner && typeof getSupabaseClient === "function") {
           try {
             const client = getSupabaseClient();
-            const { data: { session } } = await client.auth.getSession();
-            if (session) {
-              banner.classList.add('hidden');
+            if (client) {
+              const {
+                data: { session },
+              } = await client.auth.getSession();
+              if (session) {
+                banner.classList.add("hidden");
+                // Also update the auth UI in nav
+                if (typeof updateAuthUI === "function") {
+                  updateAuthUI(session.user);
+                }
+              }
             }
           } catch (e) {
             // Keep banner visible if check fails

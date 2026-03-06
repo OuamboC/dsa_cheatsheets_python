@@ -12,19 +12,22 @@ let supabaseInitialized = false;
 // Create Supabase client immediately when config is available
 function getSupabaseClient() {
   if (supabaseClient) return supabaseClient;
-  
-  if (!window.supabaseConfig || window.supabaseConfig.url === "YOUR_SUPABASE_URL") {
+
+  if (
+    !window.supabaseConfig ||
+    window.supabaseConfig.url === "YOUR_SUPABASE_URL"
+  ) {
     return null;
   }
-  
+
   if (typeof window.supabase === "undefined") {
     return null;
   }
-  
+
   try {
     supabaseClient = window.supabase.createClient(
       window.supabaseConfig.url,
-      window.supabaseConfig.anonKey
+      window.supabaseConfig.anonKey,
     );
     supabaseClient.auth.onAuthStateChange(handleAuthStateChanged);
     return supabaseClient;
@@ -108,7 +111,7 @@ async function checkSession() {
 // Handle auth state changes
 function handleAuthStateChanged(event, session) {
   console.log("Auth state changed:", event);
-  
+
   if (event === "SIGNED_IN" && session) {
     currentUser = session.user;
     console.log("User signed in:", session.user.email);
@@ -116,12 +119,12 @@ function handleAuthStateChanged(event, session) {
     injectAuthHeader(currentUser); // Show floating header
     loadUserProgress();
     hideAuthGate(); // Remove auth gate on sign-in
-    
+
     // Check if there's a stored return URL to redirect to
     const storedReturn = sessionStorage.getItem("returnUrl");
     if (storedReturn) {
       let redirectTo = storedReturn;
-      
+
       // Convert full URL to relative path if needed
       if (redirectTo.includes(window.location.origin)) {
         redirectTo = redirectTo.replace(window.location.origin, "");
@@ -129,9 +132,9 @@ function handleAuthStateChanged(event, session) {
       if (redirectTo.startsWith("/")) {
         redirectTo = redirectTo.substring(1);
       }
-      
+
       // Only redirect if we're not already on that page
-      if (!window.location.href.includes(redirectTo.split('?')[0])) {
+      if (!window.location.href.includes(redirectTo.split("?")[0])) {
         console.log("Redirecting to stored URL:", redirectTo);
         sessionStorage.removeItem("returnUrl");
         window.location.href = redirectTo;
@@ -191,8 +194,8 @@ async function signInWithGoogle() {
 
   // Store current page to return to after auth (if not on login page)
   const currentPage = window.location.pathname;
-  if (!currentPage.includes('login')) {
-    sessionStorage.setItem('returnUrl', window.location.href);
+  if (!currentPage.includes("login")) {
+    sessionStorage.setItem("returnUrl", window.location.href);
   }
 
   // Try to initialize if not already
@@ -239,8 +242,8 @@ async function signInWithGitHub() {
 
   // Store current page to return to after auth (if not on login page)
   const currentPage = window.location.pathname;
-  if (!currentPage.includes('login')) {
-    sessionStorage.setItem('returnUrl', window.location.href);
+  if (!currentPage.includes("login")) {
+    sessionStorage.setItem("returnUrl", window.location.href);
   }
 
   // Try to initialize if not already
@@ -889,21 +892,23 @@ function hideAuthGate() {
 // DISABLED FOR NOW - just check auth and show header if logged in, don't block access
 async function requireAuth() {
   console.log("requireAuth called (optional mode)");
-  
+
   // Small delay to let Supabase SDK initialize
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
   // Get or create Supabase client
   const client = getSupabaseClient();
-  
+
   if (!client) {
     console.log("Supabase not available, continuing without auth");
     return;
   }
-  
+
   try {
-    const { data: { session } } = await client.auth.getSession();
-    
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
     if (session && session.user) {
       console.log("User is authenticated:", session.user.email);
       currentUser = session.user;
@@ -914,7 +919,7 @@ async function requireAuth() {
   } catch (e) {
     console.error("Auth check error:", e);
   }
-  
+
   // Don't show gate - let everyone use the playground
 }
 
@@ -941,7 +946,9 @@ window.authModule = {
   getSessionAsync: async () => {
     if (!supabaseClient) return null;
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
       if (session) {
         currentUser = session.user;
       }

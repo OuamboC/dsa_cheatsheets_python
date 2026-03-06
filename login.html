@@ -437,8 +437,10 @@
       }
 
       // Check if this is an OAuth callback (has hash with access_token)
-      const isOAuthCallback = window.location.hash && 
-        (window.location.hash.includes("access_token") || window.location.hash.includes("error"));
+      const isOAuthCallback =
+        window.location.hash &&
+        (window.location.hash.includes("access_token") ||
+          window.location.hash.includes("error"));
 
       console.log("Full URL:", window.location.href);
       console.log("Hash:", window.location.hash);
@@ -457,16 +459,16 @@
         // Wait for Supabase SDK to process OAuth callback hash
         if (isOAuthCallback) {
           console.log("Processing OAuth callback...");
-          
+
           // Supabase auto-processes the hash, we need to wait for it
           // Poll for session with retries
           let attempts = 0;
           const maxAttempts = 20;
-          
+
           const checkSession = async () => {
             attempts++;
             console.log(`Session check attempt ${attempts}...`);
-            
+
             if (window.authModule && window.authModule.getSessionAsync) {
               const session = await window.authModule.getSessionAsync();
               if (session && session.user) {
@@ -475,14 +477,14 @@
                 return;
               }
             }
-            
+
             if (attempts < maxAttempts) {
               setTimeout(checkSession, 300);
             } else {
               console.log("Max attempts reached, no session found");
             }
           };
-          
+
           // Start checking after a brief delay
           setTimeout(checkSession, 500);
         } else {
